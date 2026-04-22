@@ -9,7 +9,7 @@ The service runs without external credentials in `mock` mode, which makes CI and
 local demos reliable. For real model calls, set `KRAI_PROVIDER=nvidia` and provide
 `KRAI_NVIDIA_API_KEY`.
 
-## Why this is portfolio-worthy
+## Why this is Impact-worthy
 
 - Kubernetes is the main orchestration platform, not an afterthought.
 - The research workflow is split into API and worker workloads.
