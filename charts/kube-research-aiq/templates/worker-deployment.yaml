@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kube-research-aiq.fullname" . }}-worker
+  labels:
+    {{- include "kube-research-aiq.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.replicaCount.worker }}
+  selector:
+    matchLabels:
+      {{- include "kube-research-aiq.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "kube-research-aiq.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "kube-research-aiq.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "kube_research_aiq.worker"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kube-research-aiq.fullname" . }}-config
+            {{- if .Values.secrets.create }}
+            - secretRef:
+                name: {{ include "kube-research-aiq.fullname" . }}-secrets
+            {{- end }}
+          {{- if or .Values.secrets.nvidiaExistingSecretName .Values.secrets.databaseExistingSecretName .Values.secrets.redisExistingSecretName }}
+          env:
+            {{- if .Values.secrets.nvidiaExistingSecretName }}
+            - name: KRAI_NVIDIA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.nvidiaExistingSecretName | quote }}
+                  key: {{ .Values.secrets.nvidiaExistingSecretKey | quote }}
+            {{- end }}
+            {{- if .Values.secrets.databaseExistingSecretName }}
+            - name: KRAI_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.databaseExistingSecretName | quote }}
+                  key: {{ .Values.secrets.databaseExistingSecretKey | quote }}
+            {{- end }}
+            {{- if .Values.secrets.redisExistingSecretName }}
+            - name: KRAI_REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.redisExistingSecretName | quote }}
+                  key: {{ .Values.secrets.redisExistingSecretKey | quote }}
+            {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: workflow-config
+              mountPath: /etc/krai
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: workflow-config
+          configMap:
+            name: {{ include "kube-research-aiq.fullname" . }}-config
+            items:
+              - key: workflow.yaml
+                path: workflow.yaml

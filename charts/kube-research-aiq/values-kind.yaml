@@ -1,0 +1,39 @@
+image:
+  repository: kube-research-aiq/research-service
+  tag: dev
+  pullPolicy: IfNotPresent
+
+dashboard:
+  image:
+    repository: kube-research-aiq/dashboard
+    tag: dev
+    pullPolicy: IfNotPresent
+
+config:
+  environment: kind
+  provider: mock
+  corsOrigins: "*"
+
+postgres:
+  enabled: true
+  password: krai-kind-password
+
+secrets:
+  create: true
+  nvidiaApiKey: ""
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false
+
+serviceMonitor:
+  enabled: false
+
+grafanaDashboard:
+  enabled: true
+
+benchmarkCronJob:
+  enabled: true
+  schedule: "*/30 * * * *"

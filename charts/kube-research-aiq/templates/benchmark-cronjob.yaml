@@ -1,0 +1,28 @@
+{{- if .Values.benchmarkCronJob.enabled -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "kube-research-aiq.fullname" . }}-benchmark
+  labels:
+    {{- include "kube-research-aiq.labels" . | nindent 4 }}
+    app.kubernetes.io/component: benchmark
+spec:
+  schedule: {{ .Values.benchmarkCronJob.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: benchmark-trigger
+              image: curlimages/curl:8.10.1
+              command:
+                - sh
+                - -c
+                - |
+                  curl -sS -X POST "http://{{ include "kube-research-aiq.fullname" . }}-api/v1/research" \
+                    -H 'Content-Type: application/json' \
+                    -d '{"query": "{{ .Values.benchmarkCronJob.query }}", "depth": "deep", "tenant": "benchmark"}'
+{{- end }}

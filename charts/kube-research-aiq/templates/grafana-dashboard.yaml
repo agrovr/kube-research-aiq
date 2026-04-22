@@ -1,0 +1,50 @@
+{{- if .Values.grafanaDashboard.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kube-research-aiq.fullname" . }}-grafana-dashboard
+  labels:
+    {{- include "kube-research-aiq.labels" . | nindent 4 }}
+    {{- toYaml .Values.grafanaDashboard.labels | nindent 4 }}
+data:
+  kube-research-aiq.json: |
+    {
+      "uid": "kube-research-aiq",
+      "title": "KubeResearch AIQ",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "15s",
+      "tags": ["kubernetes", "aiq", "nvidia"],
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Jobs Created",
+          "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+          "targets": [{"expr": "sum(krai_jobs_created_total)", "legendFormat": "created"}]
+        },
+        {
+          "type": "stat",
+          "title": "Queue Available",
+          "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+          "targets": [{"expr": "max(krai_queue_available)", "legendFormat": "queue"}]
+        },
+        {
+          "type": "barchart",
+          "title": "Jobs by Status",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+          "targets": [
+            {"expr": "sum by (status) (krai_jobs_by_status)", "legendFormat": "{{`{{status}}`}}"}
+          ]
+        },
+        {
+          "type": "barchart",
+          "title": "Jobs by Depth",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+          "targets": [
+            {"expr": "sum by (depth) (krai_jobs_by_depth)", "legendFormat": "{{`{{depth}}`}}"}
+          ]
+        }
+      ]
+    }
+{{- end }}

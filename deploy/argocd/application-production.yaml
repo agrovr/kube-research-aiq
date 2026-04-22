@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-research-aiq-production
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/agrovr/kube-research-aiq.git
+    targetRevision: main
+    path: charts/kube-research-aiq
+    helm:
+      releaseName: kuberesearch
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: aiq-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

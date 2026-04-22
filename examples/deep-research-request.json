@@ -1,0 +1,6 @@
+{
+  "query": "Compare Kubernetes-native deployment strategies for AI research agents and recommend a production architecture.",
+  "depth": "deep",
+  "tenant": "portfolio-demo",
+  "tags": ["kubernetes", "aiq", "architecture"]
+}

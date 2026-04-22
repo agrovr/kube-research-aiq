@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kube-research-aiq.fullname" . }}-config
+  labels:
+    {{- include "kube-research-aiq.labels" . | nindent 4 }}
+data:
+  {{- $redisUrl := .Values.config.redisUrl -}}
+  {{- if and (not $redisUrl) .Values.redis.enabled -}}
+  {{- $redisUrl = include "kube-research-aiq.redisUrl" . -}}
+  {{- end }}
+  KRAI_ENVIRONMENT: {{ .Values.config.environment | quote }}
+  KRAI_PROVIDER: {{ .Values.config.provider | quote }}
+  KRAI_LLM_BASE_URL: {{ .Values.config.llmBaseUrl | quote }}
+  KRAI_SHALLOW_MODEL: {{ .Values.config.shallowModel | quote }}
+  KRAI_DEEP_MODEL: {{ .Values.config.deepModel | quote }}
+  KRAI_CLASSIFIER_MODEL: {{ .Values.config.classifierModel | quote }}
+  KRAI_MAX_REPORT_SECTIONS: {{ .Values.config.maxReportSections | quote }}
+  KRAI_CORS_ORIGINS: {{ .Values.config.corsOrigins | quote }}
+  KRAI_REDIS_URL: {{ $redisUrl | quote }}
+  workflow.yaml: |
+    name: kube-research-aiq
+    description: AI-Q inspired Kubernetes research workflow
+    routing:
+      auto_depth_markers:
+        - compare
+        - evaluate
+        - architecture
+        - strategy
+        - tradeoff
+        - research
+    agents:
+      orchestrator:
+        model: {{ .Values.config.classifierModel | quote }}
+        role: classify intent and select shallow or deep path
+      shallow_researcher:
+        model: {{ .Values.config.shallowModel | quote }}
+        role: bounded tool-augmented answer with citations
+      deep_researcher:
+        model: {{ .Values.config.deepModel | quote }}
+        role: multi-step plan, investigate, synthesize report

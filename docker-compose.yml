@@ -1,0 +1,77 @@
+services:
+  redis:
+    image: redis:7.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: krai
+      POSTGRES_USER: krai
+      POSTGRES_PASSWORD: krai-dev-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U krai -d krai"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./apps/research-service
+    environment:
+      KRAI_PROVIDER: mock
+      KRAI_REDIS_URL: redis://redis:6379/0
+      KRAI_DATABASE_URL: postgresql://krai:krai-dev-password@postgres:5432/krai
+      KRAI_STORAGE_PATH: /data/jobs.json
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - api-data:/data
+
+  worker:
+    build:
+      context: ./apps/research-service
+    command: ["python", "-m", "kube_research_aiq.worker"]
+    environment:
+      KRAI_PROVIDER: mock
+      KRAI_REDIS_URL: redis://redis:6379/0
+      KRAI_DATABASE_URL: postgresql://krai:krai-dev-password@postgres:5432/krai
+      KRAI_STORAGE_PATH: /data/jobs.json
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:8080"
+    depends_on:
+      - api
+
+volumes:
+  redis-data:
+  api-data:
+  postgres-data:

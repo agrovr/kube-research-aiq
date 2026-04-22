@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/research-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check src tests
+      - name: Test
+        run: pytest
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Helm lint
+        run: helm lint charts/kube-research-aiq
+      - name: Helm template
+        run: helm template kuberesearch charts/kube-research-aiq --namespace aiq-system
+
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/dashboard/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint dashboard
+        run: npm run lint
+      - name: Build dashboard
+        run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [python, helm, dashboard]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository }}/research-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository }}/research-service:latest \
+            apps/research-service
+      - name: Build dashboard image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository }}/dashboard:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository }}/dashboard:latest \
+            apps/dashboard
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push API image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push ghcr.io/${{ github.repository }}/research-service:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/research-service:latest
+      - name: Push dashboard image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push ghcr.io/${{ github.repository }}/dashboard:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/dashboard:latest

@@ -1,0 +1,59 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "kube-research-aiq.fullname" . }}
+  labels:
+    {{- include "kube-research-aiq.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "kube-research-aiq.fullname" . }}-api
+                port:
+                  name: http
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "kube-research-aiq.fullname" . }}-api
+                port:
+                  name: http
+          - path: /readyz
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "kube-research-aiq.fullname" . }}-api
+                port:
+                  name: http
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "kube-research-aiq.fullname" . }}-api
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                {{- if .Values.dashboard.enabled }}
+                name: {{ include "kube-research-aiq.fullname" . }}-dashboard
+                {{- else }}
+                name: {{ include "kube-research-aiq.fullname" . }}-api
+                {{- end }}
+                port:
+                  name: http
+{{- end }}

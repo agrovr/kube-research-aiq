@@ -1,0 +1,104 @@
+replicaCount:
+  api: 3
+  worker: 3
+
+image:
+  repository: ghcr.io/agrovr/kube-research-aiq/research-service
+  tag: latest
+  pullPolicy: Always
+
+dashboard:
+  enabled: true
+  image:
+    repository: ghcr.io/agrovr/kube-research-aiq/dashboard
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+config:
+  environment: production
+  provider: nvidia
+  shallowModel: mistralai/mixtral-8x7b-instruct-v0.1
+  deepModel: mistralai/mixtral-8x7b-instruct-v0.1
+  classifierModel: mistralai/mixtral-8x7b-instruct-v0.1
+  corsOrigins: https://kuberesearch.example.com
+
+secrets:
+  create: false
+  nvidiaExistingSecretName: krai-runtime-secrets
+  nvidiaExistingSecretKey: KRAI_NVIDIA_API_KEY
+  databaseExistingSecretName: krai-runtime-secrets
+  databaseExistingSecretKey: KRAI_DATABASE_URL
+  redisExistingSecretName: krai-runtime-secrets
+  redisExistingSecretKey: KRAI_REDIS_URL
+
+redis:
+  enabled: false
+
+postgres:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  host: kuberesearch.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+  tls:
+    - secretName: kuberesearch-tls
+      hosts:
+        - kuberesearch.example.com
+
+autoscaling:
+  enabled: true
+  api:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 65
+  worker:
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 65
+
+api:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 384Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+worker:
+  resources:
+    requests:
+      cpu: 300m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+networkPolicy:
+  enabled: true
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: prometheus
+
+grafanaDashboard:
+  enabled: true
+  labels:
+    grafana_dashboard: "1"
+
+benchmarkCronJob:
+  enabled: true
+  schedule: "0 */6 * * *"
+  query: "Evaluate Kubernetes-native architecture patterns for AI research agents."

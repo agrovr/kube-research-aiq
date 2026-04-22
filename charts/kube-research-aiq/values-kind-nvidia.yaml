@@ -1,0 +1,9 @@
+config:
+  provider: nvidia
+  shallowModel: mistralai/mixtral-8x7b-instruct-v0.1
+  deepModel: mistralai/mixtral-8x7b-instruct-v0.1
+  classifierModel: mistralai/mixtral-8x7b-instruct-v0.1
+
+secrets:
+  nvidiaExistingSecretName: nvidia-api
+  nvidiaExistingSecretKey: KRAI_NVIDIA_API_KEY

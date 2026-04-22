@@ -1,0 +1,17 @@
+KubeResearch AIQ has been installed.
+
+Forward the API locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kube-research-aiq.fullname" . }}-api 8080:80
+
+{{- if .Values.dashboard.enabled }}
+Forward the dashboard locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kube-research-aiq.fullname" . }}-dashboard 5173:80
+{{- end }}
+
+Create a research job:
+  curl -X POST http://localhost:8080/v1/research \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"Compare Kubernetes deployment strategies for AI research agents.","depth":"deep"}'
+
+Check readiness:
+  curl http://localhost:8080/readyz

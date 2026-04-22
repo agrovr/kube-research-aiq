@@ -1,0 +1,14 @@
+apiVersion: v2
+name: kube-research-aiq
+description: Kubernetes-native AI-Q inspired async research platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - aiq
+  - nvidia
+  - kubernetes
+  - research-agent
+  - nim
+maintainers:
+  - name: KubeResearch AIQ

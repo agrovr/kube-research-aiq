@@ -1,0 +1,149 @@
+replicaCount:
+  api: 2
+  worker: 2
+
+image:
+  repository: ghcr.io/agrovr/kube-research-aiq/research-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+dashboard:
+  enabled: true
+  image:
+    repository: ghcr.io/agrovr/kube-research-aiq/dashboard
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 250m
+      memory: 192Mi
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 100
+  fsGroup: 100
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+config:
+  environment: production
+  provider: mock
+  llmBaseUrl: https://integrate.api.nvidia.com/v1
+  shallowModel: nvidia/nemotron-3-nano-30b-a3b
+  deepModel: openai/gpt-oss-120b
+  classifierModel: nvidia/nemotron-3-nano-30b-a3b
+  redisUrl: ""
+  maxReportSections: "5"
+  corsOrigins: "*"
+
+secrets:
+  create: true
+  nvidiaExistingSecretName: ""
+  nvidiaExistingSecretKey: KRAI_NVIDIA_API_KEY
+  databaseExistingSecretName: ""
+  databaseExistingSecretKey: KRAI_DATABASE_URL
+  redisExistingSecretName: ""
+  redisExistingSecretKey: KRAI_REDIS_URL
+  nvidiaApiKey: ""
+  databaseUrl: ""
+  tavilyApiKey: ""
+  serperApiKey: ""
+
+api:
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+
+worker:
+  resources:
+    requests:
+      cpu: 150m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+redis:
+  enabled: true
+  image: redis:7.2-alpine
+  storageClassName: ""
+  storageSize: 2Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  database: krai
+  username: krai
+  password: krai-dev-password
+  storageClassName: ""
+  storageSize: 4Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+
+ingress:
+  enabled: false
+  className: nginx
+  host: kuberesearch.local
+  annotations: {}
+  tls: []
+
+autoscaling:
+  enabled: true
+  api:
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  worker:
+    minReplicas: 1
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+networkPolicy:
+  enabled: true
+
+serviceMonitor:
+  enabled: false
+  labels: {}
+
+grafanaDashboard:
+  enabled: false
+  labels:
+    grafana_dashboard: "1"
+
+benchmarkCronJob:
+  enabled: false
+  schedule: "0 */6 * * *"
+  query: "Evaluate Kubernetes-native architecture patterns for AI research agents."
