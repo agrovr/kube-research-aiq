@@ -61,6 +61,14 @@ scripts/                     Local smoke-test helpers
 .github/workflows/           CI pipeline
 ```
 
+## Demo and deployment guides
+
+- [Demo walkthrough](docs/demo-walkthrough.md): interview and portfolio demo flow
+- [kind demo](docs/kind-demo.md): local Kubernetes demo on Docker Desktop
+- [Free k3s deployment](docs/deploy-free-k3s.md): no-cost public URL track
+- [DigitalOcean Kubernetes deployment](docs/deploy-doks.md): paid managed-cluster alternative
+- [Deployment options](docs/deployment-options.md): local vs public deployment tradeoffs
+
 ## Local quick start
 
 ```bash

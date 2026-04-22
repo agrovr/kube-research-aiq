@@ -23,12 +23,25 @@ Use this mode when you want to demonstrate:
 ## Public Kubernetes deployment
 
 Use a reachable Kubernetes cluster when other people need to open the dashboard
-or API without running the project themselves. Good targets are:
+or API without running the project themselves.
 
-- GKE Autopilot
-- Amazon EKS
-- Azure AKS
+The recommended free public track is:
+
+- Oracle Cloud Always Free Ampere A1 VM
+- k3s as the Kubernetes distribution
+- Traefik and ServiceLB from k3s for ingress
+- `sslip.io` or an owned domain for DNS
+
+See [deploy-free-k3s.md](deploy-free-k3s.md). This path is designed to avoid paid
+managed Kubernetes clusters and paid cloud load balancers, as long as you stay
+inside the cloud provider's Always Free limits.
+
+Paid managed-cluster alternatives are:
+
 - DigitalOcean Kubernetes
+- GKE Autopilot
+- Azure AKS
+- Amazon EKS
 - A homelab cluster with a public ingress controller
 
 The production values file assumes:
