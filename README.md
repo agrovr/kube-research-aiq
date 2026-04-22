@@ -1,5 +1,11 @@
 # KubeResearch AIQ
 
+[![CI](https://github.com/agrovr/kube-research-aiq/actions/workflows/ci.yml/badge.svg)](https://github.com/agrovr/kube-research-aiq/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](apps/research-service)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0f172a)](apps/dashboard)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm%20%2B%20ArgoCD-326CE5?logo=kubernetes&logoColor=white)](charts/kube-research-aiq)
+[![NVIDIA](https://img.shields.io/badge/NVIDIA-AI--Q%20Inspired-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/nvidia/aiq/blueprintcard)
+
 KubeResearch AIQ is a Kubernetes-native research-agent platform inspired by the
 NVIDIA AI-Q Blueprint. It turns the AI-Q idea of shallow and deep research agents
 into an async, production-shaped service with an API, worker pool, Helm chart,
@@ -8,6 +14,8 @@ GitOps example, metrics, autoscaling, and benchmark job hooks.
 The service runs without external credentials in `mock` mode, which makes CI and
 local demos reliable. For real model calls, set `KRAI_PROVIDER=nvidia` and provide
 `KRAI_NVIDIA_API_KEY`.
+
+![KubeResearch AIQ dashboard](docs/assets/dashboard.png)
 
 ## Why this is Impact-worthy
 
@@ -183,7 +191,7 @@ dashboard discovery, and benchmark CronJobs.
 
 For GitOps, use
 [`deploy/argocd/application-production.yaml`](deploy/argocd/application-production.yaml).
-For GitHub setup, see [docs/github-publishing.md](docs/github-publishing.md).
+For live access options, see [docs/deployment-options.md](docs/deployment-options.md).
 
 ## Resume line
 
