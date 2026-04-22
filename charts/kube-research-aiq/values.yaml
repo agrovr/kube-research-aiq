@@ -47,6 +47,7 @@ config:
   deepModel: openai/gpt-oss-120b
   classifierModel: nvidia/nemotron-3-nano-30b-a3b
   redisUrl: ""
+  storagePath: /data/jobs.json
   maxReportSections: "5"
   corsOrigins: "*"
 

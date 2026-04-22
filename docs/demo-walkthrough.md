@@ -95,6 +95,16 @@ This keeps the public deployment Kubernetes-native without paying for a managed
 Kubernetes control plane or managed load balancer. Use the DigitalOcean guide
 only if you decide a paid managed-cluster demo is worth it.
 
+If Oracle Always Free Ampere capacity is unavailable, use the smaller Google
+Cloud `e2-micro` k3s profile:
+
+```bash
+./scripts/deploy-gce-free-k3s.sh "203.0.113.10.sslip.io"
+```
+
+Call out that this is a tiny public demo profile. The full Kubernetes architecture
+is still demonstrated locally with kind.
+
 For the paid managed-cluster alternative, use:
 
 ```powershell

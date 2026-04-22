@@ -36,6 +36,12 @@ See [deploy-free-k3s.md](deploy-free-k3s.md). This path is designed to avoid pai
 managed Kubernetes clusters and paid cloud load balancers, as long as you stay
 inside the cloud provider's Always Free limits.
 
+If Oracle Ampere capacity is unavailable, use the smaller Google Cloud
+`e2-micro` plus k3s track in [deploy-gce-free-k3s.md](deploy-gce-free-k3s.md).
+That profile disables Redis, PostgreSQL, autoscaling, and worker replicas so it
+can fit on a free-tier VM. It is a public demo profile, not the full production
+architecture.
+
 Paid managed-cluster alternatives are:
 
 - DigitalOcean Kubernetes

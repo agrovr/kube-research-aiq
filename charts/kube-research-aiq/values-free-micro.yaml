@@ -1,0 +1,84 @@
+replicaCount:
+  api: 1
+  worker: 0
+
+image:
+  repository: ghcr.io/agrovr/kube-research-aiq/research-service
+  tag: latest
+  pullPolicy: Always
+
+dashboard:
+  enabled: true
+  image:
+    repository: ghcr.io/agrovr/kube-research-aiq/dashboard
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+
+config:
+  environment: free-micro
+  provider: nvidia
+  shallowModel: mistralai/mixtral-8x7b-instruct-v0.1
+  deepModel: mistralai/mixtral-8x7b-instruct-v0.1
+  classifierModel: mistralai/mixtral-8x7b-instruct-v0.1
+  redisUrl: ""
+  storagePath: /tmp/krai/jobs.json
+  maxReportSections: "3"
+  corsOrigins: "*"
+
+secrets:
+  create: true
+  nvidiaExistingSecretName: nvidia-api
+  nvidiaExistingSecretKey: KRAI_NVIDIA_API_KEY
+
+api:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 384Mi
+
+worker:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+redis:
+  enabled: false
+
+postgres:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: traefik
+  host: replace-me.sslip.io
+  annotations: {}
+  tls: []
+
+autoscaling:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+serviceMonitor:
+  enabled: false
+
+grafanaDashboard:
+  enabled: false
+
+benchmarkCronJob:
+  enabled: false

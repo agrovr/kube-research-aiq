@@ -18,6 +18,7 @@ data:
   KRAI_MAX_REPORT_SECTIONS: {{ .Values.config.maxReportSections | quote }}
   KRAI_CORS_ORIGINS: {{ .Values.config.corsOrigins | quote }}
   KRAI_REDIS_URL: {{ $redisUrl | quote }}
+  KRAI_STORAGE_PATH: {{ .Values.config.storagePath | quote }}
   workflow.yaml: |
     name: kube-research-aiq
     description: AI-Q inspired Kubernetes research workflow
