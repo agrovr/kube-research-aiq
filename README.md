@@ -210,12 +210,6 @@ For GitOps, use
 [`deploy/argocd/application-production.yaml`](deploy/argocd/application-production.yaml).
 For live access options, see [docs/deployment-options.md](docs/deployment-options.md).
 
-## Resume line
-
-Built KubeResearch AIQ, a Kubernetes-native deep research agent platform with
-async AI workflows, Helm deployment, GitOps, observability, and benchmark-driven
-evaluation.
-
 ## Upstream inspiration
 
 - NVIDIA AI-Q Blueprint: https://build.nvidia.com/nvidia/aiq/blueprintcard
