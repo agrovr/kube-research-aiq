@@ -13,7 +13,7 @@ The design is:
 - In-cluster Redis and PostgreSQL StatefulSets
 - NVIDIA-hosted chat completions through a Kubernetes Secret
 
-This avoids paid managed Kubernetes clusters and paid cloud load balancers.
+This path avoids paid managed Kubernetes clusters and paid cloud load balancers.
 
 ## Free-tier guardrails
 
@@ -33,8 +33,8 @@ To keep this deployment free:
 - Add a budget alert in OCI before deploying.
 
 Free capacity can be unavailable in some regions. If OCI reports no capacity,
-wait, try another availability domain, or choose a different home region before
-you build anything around the deployment.
+retry another availability domain or choose a different home region before
+building the deployment around this profile.
 
 ## VM setup
 
@@ -48,10 +48,10 @@ Create one Ubuntu Always Free Ampere A1 VM in OCI:
 
 Open inbound ports in the OCI security list or network security group:
 
-- `22/tcp` for SSH from your IP
+- `22/tcp` for SSH from the administrator IP
 - `80/tcp` for HTTP
 - `443/tcp` for HTTPS
-- `6443/tcp` for Kubernetes API from your IP only
+- `6443/tcp` for Kubernetes API access from the administrator IP only
 
 ## Install k3s on the VM
 
@@ -65,7 +65,7 @@ sudo kubectl get nodes
 k3s includes Traefik Ingress by default and includes ServiceLB, which can expose
 LoadBalancer Services through host ports without a cloud load balancer.
 
-Copy kubeconfig to your local machine:
+Copy kubeconfig to the local administration environment:
 
 ```bash
 sudo cat /etc/rancher/k3s/k3s.yaml
@@ -88,12 +88,12 @@ For example, if the VM public IP is `203.0.113.10`, use:
 203.0.113.10.sslip.io
 ```
 
-For a nicer portfolio URL, point a domain you already own at the VM public IP.
-The domain itself may not be free, so the `sslip.io` option is the no-cost path.
+For a cleaner public URL, point an owned domain at the VM public IP. The domain
+itself may not be free, so the `sslip.io` option is the no-cost path.
 
 ## Deploy KubeResearch AIQ
 
-Set your NVIDIA key only in the current shell:
+Set the NVIDIA key only in the active shell:
 
 ```powershell
 $env:KRAI_NVIDIA_API_KEY = "paste-key-here"
@@ -104,7 +104,7 @@ Deploy:
 ```powershell
 .\scripts\deploy-free-k3s.ps1 `
   -HostName "203.0.113.10.sslip.io" `
-  -LetsEncryptEmail "you@example.com"
+  -LetsEncryptEmail "admin@example.com"
 ```
 
 The script:
@@ -140,8 +140,8 @@ helm -n cert-manager uninstall cert-manager
 ```
 
 To stop all possible OCI usage, terminate the VM and delete unused boot volumes
-from the OCI console. This matters because storage can remain after instance
-termination depending on how the VM was deleted.
+from the OCI console. Storage can remain after instance termination depending on
+how the VM was deleted.
 
 ## References
 

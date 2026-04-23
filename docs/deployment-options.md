@@ -1,29 +1,29 @@
 # Deployment Options
 
-KubeResearch AIQ has two different access stories: a local portfolio demo and a
-public Kubernetes deployment.
+KubeResearch AIQ supports two deployment modes: a local Kubernetes environment
+for reproducible demos and a public Kubernetes environment for external access.
 
 ## Local demo with kind
 
-The kind workflow runs the full platform on your laptop. It is ideal for
-screenshots, interviews, and reviewers who want to clone the repo and verify the
-Kubernetes manifests without cloud spend.
+The kind workflow runs the full platform on a local development device. It is
+ideal for screenshots, interviews, and repository reviewers who want to verify
+the Kubernetes manifests without cloud spend.
 
-Port-forwarding is only a local tunnel from your machine into the kind cluster.
-For example, `http://127.0.0.1:15173` works only on your laptop while the
+Port-forwarding creates a local tunnel into the kind cluster. For example,
+`http://127.0.0.1:5173` is reachable only on the local device while the
 port-forward process is running. It is not a public URL.
 
-Use this mode when you want to demonstrate:
+Use this mode to demonstrate:
 
 - Helm installation
 - Deployments, StatefulSets, ConfigMaps, Secrets, HPA, and NetworkPolicies
-- NVIDIA-backed smoke tests with your own key
+- NVIDIA-backed smoke tests with a local runtime key
 - Dashboard screenshots and API examples
 
 ## Public Kubernetes deployment
 
-Use a reachable Kubernetes cluster when other people need to open the dashboard
-or API without running the project themselves.
+Use a reachable Kubernetes cluster when external reviewers need to access the
+dashboard or API without running the project themselves.
 
 The recommended free public track is:
 
@@ -39,8 +39,8 @@ inside the cloud provider's Always Free limits.
 If Oracle Ampere capacity is unavailable, use the smaller Google Cloud
 `e2-micro` plus k3s track in [deploy-gce-free-k3s.md](deploy-gce-free-k3s.md).
 That profile disables Redis, PostgreSQL, autoscaling, and worker replicas so it
-can fit on a free-tier VM. It is a public demo profile, not the full production
-architecture.
+can fit on a free-tier VM. It is a constrained public demo profile rather than
+the full production architecture.
 
 Paid managed-cluster alternatives are:
 
@@ -88,16 +88,16 @@ After the repository is pushed to GitHub, apply the ArgoCD application:
 kubectl apply -f deploy/argocd/application-production.yaml
 ```
 
-Before using it in a real cluster, update:
+Before applying it to a target cluster, update:
 
 - `spec.source.repoURL`
 - `ingress.host`
 - `config.corsOrigins`
 - TLS issuer annotation if your cluster uses a different cert-manager issuer
 
-## Recommended portfolio narrative
+## Project narrative
 
-For GitHub and interviews, present this project as:
+The concise project description:
 
 > A Kubernetes-native AI research agent platform with async API/worker
 > orchestration, NVIDIA-hosted model integration, Helm packaging, GitOps

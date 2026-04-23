@@ -1,7 +1,7 @@
 # Demo Walkthrough
 
-Use this guide when recording a portfolio demo, presenting the project in an
-interview, or walking a reviewer through the repository.
+Use this guide for repository walkthroughs, interview demos, and short technical
+presentations of KubeResearch AIQ.
 
 ## 90-second pitch
 
@@ -18,9 +18,9 @@ Resume-ready line:
 > packaging, GitOps deployment, persistent state, observability, and production
 > overlays.
 
-## What to show first
+## Repository tour
 
-Open the GitHub repository and point out:
+Start with the repository overview:
 
 - CI badge is green
 - Dashboard screenshot shows the operator workflow
@@ -28,11 +28,11 @@ Open the GitHub repository and point out:
 - `apps/dashboard` contains the React dashboard
 - `charts/kube-research-aiq` contains the Kubernetes-native deployment
 - `deploy/argocd` shows the GitOps path
-- `docs/deploy-doks.md` shows the public deployment track
+- `docs/deployment-options.md` compares local and public deployment tracks
 
 ## Local demo path
 
-Run the mock mode when you want a fast demo without external services:
+Use mock mode for a fast demo without external services:
 
 ```powershell
 cd apps/research-service
@@ -61,7 +61,13 @@ Open `http://127.0.0.1:5173`, create a deep research request, and show:
 
 ## Kubernetes demo path
 
-Use kind when Docker Desktop is running:
+Use kind to demonstrate the Kubernetes deployment locally:
+
+```powershell
+.\scripts\local-demo.ps1
+```
+
+For a manual deployment:
 
 ```powershell
 .\scripts\create-kind-cluster.ps1
@@ -78,22 +84,24 @@ $env:KRAI_NVIDIA_API_KEY = "paste-key-here"
 .\scripts\smoke-kind-nvidia.ps1
 ```
 
-Call out that kind port-forwards are local-only. A public URL requires a public
-Kubernetes cluster and Ingress, which is covered by the DOKS guide.
+Call out that kind port-forwards are local-only. A public URL requires a
+reachable Kubernetes cluster and Ingress, as described in
+`docs/deployment-options.md`.
 
 ## Public deployment path
 
-For a free live portfolio URL, use the Oracle Always Free plus k3s track:
+For a no-cost public Kubernetes demo, use the Oracle Always Free plus k3s track:
 
 ```powershell
 .\scripts\deploy-free-k3s.ps1 `
   -HostName "203.0.113.10.sslip.io" `
-  -LetsEncryptEmail "you@example.com"
+  -LetsEncryptEmail "admin@example.com"
 ```
 
-This keeps the public deployment Kubernetes-native without paying for a managed
-Kubernetes control plane or managed load balancer. Use the DigitalOcean guide
-only if you decide a paid managed-cluster demo is worth it.
+This keeps the public deployment Kubernetes-native without requiring a paid
+managed Kubernetes control plane or managed load balancer. The DigitalOcean
+guide documents a managed-cluster option for environments where a paid platform
+is acceptable.
 
 If Oracle Always Free Ampere capacity is unavailable, use the smaller Google
 Cloud `e2-micro` k3s profile:
@@ -102,16 +110,16 @@ Cloud `e2-micro` k3s profile:
 ./scripts/deploy-gce-free-k3s.sh "203.0.113.10.sslip.io"
 ```
 
-Call out that this is a tiny public demo profile. The full Kubernetes architecture
-is still demonstrated locally with kind.
+This is a constrained public demo profile. The full Kubernetes architecture is
+still demonstrated locally with kind.
 
 For the paid managed-cluster alternative, use:
 
 ```powershell
 .\scripts\deploy-doks.ps1 `
   -ClusterName "kube-research-aiq" `
-  -HostName "research.yourdomain.com" `
-  -LetsEncryptEmail "you@example.com"
+  -HostName "research.example.com" `
+  -LetsEncryptEmail "admin@example.com"
 ```
 
 Show these Kubernetes objects:
@@ -155,7 +163,7 @@ Why mock mode?
 > same workflow switches to NVIDIA mode through environment configuration and
 > Kubernetes Secrets.
 
-What would you improve next?
+What would be improved next?
 
 > Add managed Redis/PostgreSQL for the public cluster, SLO dashboards,
 > structured evaluation datasets, and ArgoCD image automation for SHA-pinned

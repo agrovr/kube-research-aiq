@@ -1,8 +1,8 @@
-# kind Demo
+# Local Kubernetes Demo with kind
 
-This project targets `kind` for the local Kubernetes demo path. `kind` is a good
-portfolio target because it lets reviewers run the platform on a laptop without
-cloud credentials.
+This guide uses `kind` to run the full KubeResearch AIQ platform on a local
+development device. The workflow is intended for reproducible demos, repository
+review, and Kubernetes manifest validation without requiring cloud credentials.
 
 ## Prerequisites
 
@@ -11,7 +11,27 @@ cloud credentials.
 - `helm`
 - `kind`
 
-## Create the cluster
+## One-command demo
+
+Run the all-in-one helper from the repository root:
+
+```powershell
+.\scripts\local-demo.ps1
+```
+
+The helper creates or reuses the kind cluster, deploys the Helm chart, starts
+API and dashboard port-forwards in minimized PowerShell windows, opens the
+dashboard, and runs a smoke test.
+
+To skip rebuilding and redeploying when the cluster is already current:
+
+```powershell
+.\scripts\local-demo.ps1 -SkipDeploy
+```
+
+## Manual deployment
+
+Create the cluster:
 
 ```powershell
 .\scripts\create-kind-cluster.ps1
@@ -24,7 +44,8 @@ cloud credentials.
 ```
 
 The kind values file deploys Redis for queueing and PostgreSQL for durable job
-metadata. Both run as single-replica StatefulSets for local demo simplicity.
+metadata. Both run as single-replica StatefulSets to keep the local environment
+lightweight.
 
 The chart also renders a Grafana dashboard ConfigMap. In a cluster with the
 Grafana sidecar enabled, it can be discovered by the `grafana_dashboard=1` label.
@@ -37,10 +58,10 @@ kubectl -n aiq-system port-forward svc/kuberesearch-kube-research-aiq-dashboard 
 
 Open `http://localhost:5173`.
 
-This URL is only reachable from your laptop while the port-forward process is
-running. It is perfect for a local demo, but it is not a public deployment. Use
-[deployment options](deployment-options.md) when you want a live URL that other
-people can open.
+This URL is reachable only from the local development device while the
+port-forward process is running. It is suitable for local validation and demos,
+but it is not a public deployment. Use [deployment options](deployment-options.md)
+for externally reachable environments.
 
 The Helm chart mounts an nginx config into the dashboard pod so `/v1`,
 `/readyz`, `/healthz`, and `/metrics` are proxied to the API service. That means
@@ -60,8 +81,8 @@ Invoke-RestMethod http://localhost:8000/readyz
 
 ## Use NVIDIA-hosted endpoints
 
-Do not commit API keys into Helm values. Put the key in your shell and create a
-Kubernetes Secret:
+Do not commit API keys into Helm values. Set the key only in the active shell
+and create a Kubernetes Secret:
 
 ```powershell
 $env:KRAI_NVIDIA_API_KEY = "paste-key-here"

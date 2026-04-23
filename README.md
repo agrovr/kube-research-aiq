@@ -7,25 +7,27 @@
 [![NVIDIA](https://img.shields.io/badge/NVIDIA-AI--Q%20Inspired-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/nvidia/aiq/blueprintcard)
 
 KubeResearch AIQ is a Kubernetes-native research-agent platform inspired by the
-NVIDIA AI-Q Blueprint. It turns the AI-Q idea of shallow and deep research agents
-into an async, production-shaped service with an API, worker pool, Helm chart,
-GitOps example, metrics, autoscaling, and benchmark job hooks.
+NVIDIA AI-Q Blueprint. The project adapts AI-Q style shallow and deep research
+workflows into an asynchronous platform with a FastAPI control plane, worker
+pool, persistent storage, Helm packaging, GitOps manifests, metrics, autoscaling,
+and benchmark hooks.
 
 The service runs without external credentials in `mock` mode, which makes CI and
-local demos reliable. For real model calls, set `KRAI_PROVIDER=nvidia` and provide
-`KRAI_NVIDIA_API_KEY`.
+local Kubernetes demonstrations deterministic. For hosted model calls, set
+`KRAI_PROVIDER=nvidia` and provide `KRAI_NVIDIA_API_KEY` through environment
+configuration or a Kubernetes Secret.
 
 ![KubeResearch AIQ dashboard](docs/assets/dashboard.png)
 
-## Why this is Impact-worthy
+## Project highlights
 
-- Kubernetes is the main orchestration platform, not an afterthought.
-- The research workflow is split into API and worker workloads.
+- Kubernetes is the primary orchestration layer for the platform.
+- The research workflow is separated into API and worker workloads.
 - Redis backs async queueing and PostgreSQL stores research jobs/reports.
 - Helm includes Deployments, StatefulSets, ConfigMap, Secret, HPA, NetworkPolicy,
   ServiceMonitor, Ingress, and a benchmark CronJob.
 - CI validates Python tests, linting, image builds, and Helm rendering.
-- ArgoCD configuration shows how the platform would be promoted with GitOps.
+- ArgoCD configuration demonstrates a GitOps promotion path.
 
 ## Architecture
 
@@ -65,9 +67,9 @@ scripts/                     Local smoke-test helpers
 
 - [Demo walkthrough](docs/demo-walkthrough.md): interview and portfolio demo flow
 - [kind demo](docs/kind-demo.md): local Kubernetes demo on Docker Desktop
-- [Google Cloud e2-micro k3s deployment](docs/deploy-gce-free-k3s.md): tiny free-tier public demo
-- [Free k3s deployment](docs/deploy-free-k3s.md): no-cost public URL track
-- [DigitalOcean Kubernetes deployment](docs/deploy-doks.md): paid managed-cluster alternative
+- [Google Cloud e2-micro k3s deployment](docs/deploy-gce-free-k3s.md): constrained free-tier public demo
+- [Free k3s deployment](docs/deploy-free-k3s.md): no-cost public deployment track
+- [DigitalOcean Kubernetes deployment](docs/deploy-doks.md): managed Kubernetes deployment option
 - [Deployment options](docs/deployment-options.md): local vs public deployment tradeoffs
 
 ## Local quick start
@@ -104,10 +106,16 @@ npm run dev
 
 ## Kubernetes quick start
 
-For a laptop-friendly Kubernetes demo, use the [kind demo guide](docs/kind-demo.md).
-Port-forwarded URLs from kind are local to your machine. To make the dashboard
-available to other people, deploy to a reachable Kubernetes cluster with an
-Ingress controller. See [deployment options](docs/deployment-options.md).
+For a local Kubernetes environment, use the [kind demo guide](docs/kind-demo.md).
+kind port-forwarded URLs are scoped to the local development device. External
+access requires a reachable Kubernetes cluster with an Ingress controller; see
+[deployment options](docs/deployment-options.md).
+
+Run the complete local kind demo:
+
+```powershell
+.\scripts\local-demo.ps1
+```
 
 Render the chart:
 
@@ -164,8 +172,8 @@ sidecar.
 
 ## NVIDIA key validation
 
-Do not commit NVIDIA keys to this repo. To validate a key locally, set it only in
-your current shell and run the validation script:
+Do not commit NVIDIA keys to this repository. To validate a key, set it only in
+the active shell and run the validation script:
 
 ```powershell
 $env:KRAI_NVIDIA_API_KEY = "paste-key-here"

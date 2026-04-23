@@ -6,7 +6,7 @@
 - Worker process
 - Redis queue and metadata store
 - PostgreSQL durable job/report store
-- Mock provider for local demos and CI
+- Mock provider for deterministic local demos and CI
 - NVIDIA-compatible chat completion provider
 - Helm chart with secure workload defaults
 - GitHub Actions CI and ArgoCD example
@@ -32,10 +32,10 @@
 - SealedSecrets or External Secrets Operator
 - Ingress TLS with cert-manager
 
-## Milestone 4: Portfolio polish
+## Milestone 4: Project presentation
 
 - Demo video and architecture diagram
 - Sample reports committed under `examples/`
-- One-command kind/minikube install guide
+- One-command local Kubernetes install guide
 - GitHub project board or issues showing engineering milestones
 - A public write-up explaining tradeoffs and lessons learned

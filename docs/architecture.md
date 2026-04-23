@@ -1,7 +1,9 @@
-# Architecture
+# System Architecture
 
 KubeResearch AIQ adapts NVIDIA AI-Q's orchestration, shallow research, and deep
-research workflow into a Kubernetes-first system.
+research concepts into a Kubernetes-first platform. The system separates request
+handling, asynchronous execution, persistence, and presentation into independent
+workloads that can be deployed and operated with standard Kubernetes patterns.
 
 ## Kubernetes resources
 
@@ -14,7 +16,7 @@ research workflow into a Kubernetes-first system.
 | StatefulSet `redis` | Queue and job metadata store |
 | StatefulSet `postgres` | Durable research job metadata and report storage |
 | ConfigMap | AI-Q style workflow routing and model configuration |
-| Secret | NVIDIA, Tavily, and Serper API keys |
+| Secret | Runtime credentials such as NVIDIA API keys |
 | HPA | Scales API and worker pods based on CPU |
 | NetworkPolicy | Limits inbound and outbound pod traffic |
 | ServiceMonitor | Optional Prometheus Operator integration |
@@ -61,7 +63,7 @@ sequenceDiagram
 | Deployment assets | Helm chart and ArgoCD Application |
 | Web UI | React dashboard for creating and reviewing jobs |
 
-## Production hardening ideas
+## Future production hardening
 
 - Add backup and restore runbooks for PostgreSQL.
 - Add OpenTelemetry traces for each research step.

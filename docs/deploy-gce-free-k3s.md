@@ -1,9 +1,9 @@
 # Free Google Cloud VM Deployment with k3s
 
 This is a best-effort free public demo path that avoids GKE. GKE's free tier
-covers the cluster management fee, but the compute that runs your pods is still
-billable. For a no-cost Google Cloud path, use Compute Engine's Always Free
-`e2-micro` VM and run k3s yourself.
+covers the cluster management fee, but the compute that runs application pods is
+still billable. For a no-cost Google Cloud path, use Compute Engine's Always
+Free `e2-micro` VM and run k3s directly on the instance.
 
 This profile is intentionally tiny:
 
@@ -34,7 +34,7 @@ The same docs list 30 GB-months of standard persistent disk and 1 GB of outbound
 data transfer from North America per month. Google also notes that the GKE free
 tier covers one cluster management fee, not the workload compute.
 
-To reduce surprise charges:
+To reduce unexpected charges:
 
 - Use `e2-micro`, not `e2-small` or larger.
 - Use one of the eligible regions above.
@@ -43,7 +43,7 @@ To reduce surprise charges:
   Balancer for this path.
 - Use an ephemeral external IP rather than reserving static IPs.
 - Create a budget alert before deploying.
-- Stop or delete the VM when you are done testing.
+- Stop or delete the VM when testing is complete.
 
 ## Create the VM
 
@@ -56,7 +56,7 @@ In Google Cloud Console, create a Compute Engine VM:
 - Boot disk type: Standard persistent disk
 - Boot disk size: 30 GB or less
 - Firewall: allow HTTP traffic
-- SSH: use browser SSH or your own key
+- SSH: use browser SSH or an uploaded public key
 
 After creation, copy the VM external IP. For a free hostname, use `sslip.io`:
 
@@ -139,8 +139,8 @@ This is intentionally not the full production architecture. It proves:
 - Public GHCR image pulls
 - Dashboard and API integration
 
-Use the full kind or Oracle A1 profiles when you want Redis, PostgreSQL,
-replicated workers, autoscaling, and benchmark CronJobs.
+Use the full kind or Oracle A1 profiles for Redis, PostgreSQL, replicated
+workers, autoscaling, and benchmark CronJobs.
 
 ## Cleanup
 
@@ -152,7 +152,7 @@ kubectl delete namespace aiq-system
 ```
 
 To stop all possible Google Cloud VM cost, stop or delete the VM from Compute
-Engine. Delete unused disks if you no longer need the machine.
+Engine. Delete unused disks when the machine is no longer needed.
 
 ## References
 

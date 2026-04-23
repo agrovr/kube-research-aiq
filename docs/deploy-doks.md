@@ -1,8 +1,9 @@
 # Deploy to DigitalOcean Kubernetes
 
-This is a paid managed-cluster alternative for KubeResearch AIQ. DigitalOcean
-Kubernetes, or DOKS, keeps the portfolio story focused on Kubernetes without
-requiring you to manage a control plane, but it is not the free deployment path.
+This guide documents a managed Kubernetes deployment for KubeResearch AIQ on
+DigitalOcean Kubernetes, or DOKS. It keeps the deployment architecture focused on
+standard Kubernetes objects while offloading control-plane management to
+DigitalOcean. This is not the no-cost deployment path.
 
 For a no-cost public deployment, use [deploy-free-k3s.md](deploy-free-k3s.md).
 
@@ -24,21 +25,21 @@ PostgreSQL to managed services and use `values-production.yaml`.
 - `doctl`, authenticated with DigitalOcean
 - `kubectl`
 - `helm`
-- A DNS name you control, for example `research.yourdomain.com`
-- An NVIDIA API key in your current shell as `KRAI_NVIDIA_API_KEY`
+- A DNS name for the deployment, for example `research.example.com`
+- An NVIDIA API key exported in the active shell as `KRAI_NVIDIA_API_KEY`
 
 DigitalOcean documents DOKS as a managed Kubernetes service that works with
-standard Kubernetes tools and DigitalOcean load balancers. Their connection
-guide recommends using `doctl kubernetes cluster kubeconfig save <cluster-name>`
-to merge DOKS credentials into your local kubeconfig.
+standard Kubernetes tools and DigitalOcean load balancers. The connection guide
+uses `doctl kubernetes cluster kubeconfig save <cluster-name>` to merge DOKS
+credentials into a local kubeconfig.
 
 ## Create or select a DOKS cluster
 
-Create the cluster in the DigitalOcean UI, or use `doctl` from your own terminal.
-For a portfolio demo, start with a small multi-node cluster so Deployments,
-StatefulSets, HPAs, and rollouts are meaningful.
+Create the cluster in the DigitalOcean UI, or use `doctl` from a terminal. For a
+demonstration environment, a small multi-node cluster makes Deployments,
+StatefulSets, HPAs, and rollouts meaningful.
 
-Then connect your local `kubectl`:
+Connect `kubectl`:
 
 ```powershell
 doctl kubernetes cluster kubeconfig save kube-research-aiq
@@ -47,7 +48,7 @@ kubectl get nodes
 
 ## Deploy with the helper script
 
-Set your NVIDIA key only in the current shell:
+Set the NVIDIA key only in the active shell:
 
 ```powershell
 $env:KRAI_NVIDIA_API_KEY = "paste-key-here"
@@ -58,8 +59,8 @@ Run:
 ```powershell
 .\scripts\deploy-doks.ps1 `
   -ClusterName "kube-research-aiq" `
-  -HostName "research.yourdomain.com" `
-  -LetsEncryptEmail "you@example.com"
+  -HostName "research.example.com" `
+  -LetsEncryptEmail "admin@example.com"
 ```
 
 The script:
@@ -72,7 +73,7 @@ The script:
 - Installs the Helm chart with public Ingress and TLS enabled
 - Waits for API, worker, and dashboard rollouts
 
-After ingress-nginx creates a load balancer, point your DNS record at the load
+After ingress-nginx creates a load balancer, point the DNS record at the load
 balancer address. TLS may remain pending until DNS resolves correctly.
 
 Check the public resources:
@@ -85,7 +86,7 @@ kubectl -n aiq-system describe certificate kuberesearch-tls
 
 ## Manual Helm equivalent
 
-If you prefer not to use the script, create the NVIDIA Secret:
+For a manual deployment, create the NVIDIA Secret:
 
 ```powershell
 kubectl create namespace aiq-system --dry-run=client -o yaml | kubectl apply -f -
@@ -107,11 +108,11 @@ helm upgrade --install kuberesearch charts/kube-research-aiq `
   --set dashboard.image.tag=latest `
   --set dashboard.image.pullPolicy=Always `
   --set ingress.enabled=true `
-  --set ingress.host=research.yourdomain.com `
+  --set ingress.host=research.example.com `
   --set ingress.tls[0].secretName=kuberesearch-tls `
-  --set ingress.tls[0].hosts[0]=research.yourdomain.com `
+  --set ingress.tls[0].hosts[0]=research.example.com `
   --set-string ingress.annotations.cert-manager\.io/cluster-issuer=letsencrypt-prod `
-  --set config.corsOrigins=https://research.yourdomain.com
+  --set config.corsOrigins=https://research.example.com
 ```
 
 ## Cleanup
@@ -125,8 +126,8 @@ helm -n cert-manager uninstall cert-manager
 doctl kubernetes cluster delete kube-research-aiq
 ```
 
-Before deleting a cluster, verify whether you need to keep any persistent volume
-data or exported reports.
+Before deleting a cluster, verify whether persistent volume data or exported
+reports must be retained.
 
 ## References
 
