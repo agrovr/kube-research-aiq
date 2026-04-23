@@ -11,13 +11,6 @@ research workflows, runs the work asynchronously through API and worker
 Deployments, stores durable reports, and exposes the whole system through Helm,
 GitOps, metrics, autoscaling, NetworkPolicy, and a React operator dashboard.
 
-Resume-ready line:
-
-> Built KubeResearch AIQ, a Kubernetes-native AI research agent platform with
-> async API/worker orchestration, NVIDIA-hosted model integration, Helm
-> packaging, GitOps deployment, persistent state, observability, and production
-> overlays.
-
 ## Repository tour
 
 Start with the repository overview:
