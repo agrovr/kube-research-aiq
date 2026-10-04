@@ -2,6 +2,7 @@
 name = "kube-research-aiq"
 version = "0.2.0"
 description = "Research agents that dive as deep as the question: the KubeResearch AIQ API and worker."
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115.0",

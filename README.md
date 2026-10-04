@@ -196,3 +196,8 @@ On `main`, CI also publishes the images to GHCR.
 [Architecture](docs/architecture.md) · [Research engine](docs/research-engine.md) ·
 [API](docs/api.md) · [Operating it](docs/operations.md) · [Deployment](docs/deploy/README.md) ·
 [Demo walkthrough](docs/demo-walkthrough.md) · [Roadmap](docs/roadmap.md)
+
+## License
+
+[MIT](LICENSE). The reference library's briefs are original summaries that link to the documentation
+they describe.
