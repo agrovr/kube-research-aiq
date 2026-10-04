@@ -1,317 +1,179 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { apiUrl, createJob, getReadiness, listJobs, runJob } from "./api";
-import { ClusterIcon, DownloadIcon, PlayIcon, RefreshIcon, SendIcon, TopologyMark } from "./icons";
-import type { JobStatus, ReadinessResponse, ResearchDepth, ResearchJob } from "./types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { cancelJob, createJob, followJob, getMeta, listJobs, retryJob, runJob } from "./api";
+import { AskBar } from "./components/AskBar";
+import { DiveLog } from "./components/DiveLog";
+import { Reader } from "./components/Reader";
+import { Sounding } from "./components/Sounding";
+import { Timeline } from "./components/Timeline";
+import { isLive } from "./format";
+import { LeadMark } from "./icons";
+import type { MetaResponse, ResearchDepth, ResearchJob } from "./types";
 import "./styles.css";
 
-const samplePrompt =
-  "Compare Kubernetes-native deployment strategies for AI research agents and recommend a production architecture.";
-
-const statusOrder: Record<JobStatus, number> = {
-  running: 0,
-  queued: 1,
-  succeeded: 2,
-  failed: 3
-};
-
-const statusLabels: Record<JobStatus, string> = {
-  queued: "Queued",
-  running: "Running",
-  succeeded: "Succeeded",
-  failed: "Failed"
-};
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "short",
-    day: "numeric"
-  }).format(new Date(value));
+function errorText(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
-function splitTags(value: string) {
-  return value
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+function Readout({ meta, jobs }: { meta: MetaResponse | null; jobs: ResearchJob[] }) {
+  if (!meta) return <p className="readout">Connecting to the research service…</p>;
+  const diving = jobs.filter((j) => j.status === "running").length;
+  const waiting = jobs.filter((j) => j.status === "queued").length;
+  const web = meta.retrieval.find((r) => r.startsWith("web:"));
+  return (
+    <dl className="readout">
+      <div>
+        <dt>Diving</dt>
+        <dd>{diving}</dd>
+      </div>
+      <div>
+        <dt>Waiting</dt>
+        <dd>{waiting}</dd>
+      </div>
+      <div>
+        <dt>Queue</dt>
+        <dd data-good={meta.queue.available}>{meta.queue.available ? "Redis" : "In the API"}</dd>
+      </div>
+      <div>
+        <dt>Sources</dt>
+        <dd>
+          {meta.library_documents} briefs{web ? ` and ${web.slice(4)}` : ""}
+        </dd>
+      </div>
+      <div>
+        <dt>Writer</dt>
+        <dd>{meta.writer === "model" && meta.models ? meta.models.deep : "Offline"}</dd>
+      </div>
+    </dl>
+  );
 }
 
-function statusCount(jobs: ResearchJob[], status: JobStatus) {
-  return jobs.filter((job) => job.status === status).length;
-}
-
-function App() {
+export default function App() {
   const [jobs, setJobs] = useState<ResearchJob[]>([]);
+  const [meta, setMeta] = useState<MetaResponse | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [readiness, setReadiness] = useState<ReadinessResponse | null>(null);
-  const [query, setQuery] = useState(samplePrompt);
-  const [tenant, setTenant] = useState("portfolio-demo");
-  const [tags, setTags] = useState("kubernetes, aiq, architecture");
-  const [depth, setDepth] = useState<ResearchDepth>("deep");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  const refresh = useCallback(async () => {
-    const [ready, jobList] = await Promise.all([getReadiness(), listJobs()]);
-    const sortedJobs = [...jobList.jobs].sort((a, b) => {
-      const statusDelta = statusOrder[a.status] - statusOrder[b.status];
-      if (statusDelta !== 0) return statusDelta;
-      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  const upsert = useCallback((job: ResearchJob) => {
+    setJobs((current) => {
+      const index = current.findIndex((j) => j.id === job.id);
+      if (index === -1) return [job, ...current];
+      const next = [...current];
+      next[index] = job;
+      return next;
     });
-
-    setReadiness(ready);
-    setJobs(sortedJobs);
-    setSelectedId((current) => current ?? sortedJobs[0]?.id ?? null);
   }, []);
 
+  const refresh = useCallback(async () => {
+    const [list, info] = await Promise.all([listJobs(), getMeta()]);
+    setJobs(list.jobs);
+    setMeta(info);
+    setLoaded(true);
+    setError(null);
+    setSelectedId((current) => current ?? list.jobs[0]?.id ?? null);
+  }, []);
+
+  const anyLive = jobs.some(isLive);
+
   useEffect(() => {
-    void refresh().catch((refreshError: unknown) => {
-      setError(refreshError instanceof Error ? refreshError.message : "Unable to load jobs");
-    });
+    const load = () =>
+      refresh().catch((e: unknown) => setError(errorText(e, "The research service is not reachable.")));
+    void load();
+    const timer = window.setInterval(load, anyLive ? 2000 : 8000);
+    return () => window.clearInterval(timer);
+  }, [refresh, anyLive]);
 
-    const interval = window.setInterval(() => {
-      void refresh().catch(() => undefined);
-    }, 5000);
-
-    return () => window.clearInterval(interval);
-  }, [refresh]);
-
-  const selectedJob = useMemo(
+  const selected = useMemo(
     () => jobs.find((job) => job.id === selectedId) ?? jobs[0] ?? null,
     [jobs, selectedId]
   );
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+  // Stream the selected dive while it is live; the list poll covers the others.
+  const selectedLive = selected ? isLive(selected) : false;
+  const selectedJobId = selected?.id;
+  useEffect(() => {
+    if (!selectedJobId || !selectedLive) return;
+    return followJob(selectedJobId, upsert, () => undefined);
+  }, [selectedJobId, selectedLive, upsert]);
 
+  async function act(action: () => Promise<unknown>, fallback: string) {
+    setError(null);
     try {
-      const created = await createJob({
-        query,
-        depth,
-        tenant,
-        tags: splitTags(tags)
-      });
+      await action();
       await refresh();
+    } catch (e) {
+      setError(errorText(e, fallback));
+    }
+  }
+
+  async function dive(query: string, depth: ResearchDepth) {
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await createJob({ query, depth, tenant: "console", tags: [] });
       setSelectedId(created.job_id);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to create job");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleRunNow(jobId: string) {
-    setError(null);
-    try {
-      await runJob(jobId);
       await refresh();
-      setSelectedId(jobId);
-    } catch (runError) {
-      setError(runError instanceof Error ? runError.message : "Unable to run job");
+      return true;
+    } catch (e) {
+      setError(errorText(e, "The dive could not be started."));
+      return false;
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <main className="app-shell">
-      <section className="masthead">
-        <div className="brand-lockup">
-          <span className="brand-icon">
-            <ClusterIcon />
-          </span>
+    <div className="app">
+      <header className="masthead">
+        <div className="wordmark">
+          <LeadMark className="wordmark-mark" />
           <div>
-            <p className="eyebrow">Kubernetes-native AI-Q</p>
             <h1>KubeResearch AIQ</h1>
+            <p>Research agents that dive as deep as the question.</p>
           </div>
         </div>
-        <TopologyMark />
-        <div className="runtime-strip" aria-label="Runtime status">
-          <span data-state={readiness?.queue ? "good" : "warn"}>
-            Queue {readiness?.queue ? "online" : "local"}
-          </span>
-          <span>Store {readiness?.store ?? "checking"}</span>
-          <button className="icon-button" type="button" onClick={() => void refresh()} title="Refresh">
-            <RefreshIcon />
-          </button>
-        </div>
-      </section>
+        <Readout meta={meta} jobs={jobs} />
+      </header>
 
-      <section className="metrics-row" aria-label="Research job metrics">
-        <Metric label="Total jobs" value={jobs.length} />
-        <Metric label="Running" value={statusCount(jobs, "running")} tone="blue" />
-        <Metric label="Queued" value={statusCount(jobs, "queued")} tone="amber" />
-        <Metric label="Succeeded" value={statusCount(jobs, "succeeded")} tone="green" />
-      </section>
+      <AskBar busy={busy} onDive={dive} />
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {error ? (
+        <p className="alert" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-      <section className="workspace">
-        <form className="submit-pane" onSubmit={handleSubmit}>
-          <div className="pane-heading">
-            <p className="eyebrow">New run</p>
-            <h2>Research request</h2>
-          </div>
+      <main className="workspace">
+        <DiveLog jobs={jobs} selectedId={selected?.id ?? null} onSelect={setSelectedId} />
 
-          <label>
-            Topic
-            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows={8} />
-          </label>
-
-          <div className="field-grid">
-            <label>
-              Tenant
-              <input value={tenant} onChange={(event) => setTenant(event.target.value)} />
-            </label>
-            <label>
-              Tags
-              <input value={tags} onChange={(event) => setTags(event.target.value)} />
-            </label>
-          </div>
-
-          <fieldset className="segmented-control">
-            <legend>Depth</legend>
-            {(["auto", "shallow", "deep"] as ResearchDepth[]).map((option) => (
-              <label key={option} data-active={depth === option}>
-                <input
-                  type="radio"
-                  name="depth"
-                  value={option}
-                  checked={depth === option}
-                  onChange={() => setDepth(option)}
-                />
-                {option}
-              </label>
-            ))}
-          </fieldset>
-
-          <button className="primary-action" type="submit" disabled={isSubmitting || query.length < 4}>
-            <SendIcon />
-            {isSubmitting ? "Creating" : "Create job"}
-          </button>
-        </form>
-
-        <section className="job-pane" aria-label="Research jobs">
-          <div className="pane-heading">
-            <p className="eyebrow">Queue</p>
-            <h2>Research jobs</h2>
-          </div>
-
-          <div className="job-list">
-            {jobs.length === 0 ? (
-              <p className="empty-state">No jobs yet. Create one to start the worker path.</p>
-            ) : (
-              jobs.map((job) => (
-                <button
-                  className="job-row"
-                  data-selected={selectedJob?.id === job.id}
-                  key={job.id}
-                  type="button"
-                  onClick={() => setSelectedId(job.id)}
-                >
-                  <span className="status-dot" data-status={job.status} />
-                  <span className="job-copy">
-                    <strong>{job.request.query}</strong>
-                    <span>
-                      {statusLabels[job.status]} · {job.selected_depth ?? job.request.depth} ·{" "}
-                      {formatTime(job.updated_at)}
-                    </span>
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-        </section>
-
-        <aside className="report-pane" aria-label="Selected report">
-          <div className="pane-heading">
-            <p className="eyebrow">Inspector</p>
-            <h2>{selectedJob ? "Report" : "No selection"}</h2>
-          </div>
-
-          {selectedJob ? (
-            <ReportInspector job={selectedJob} onRunNow={handleRunNow} />
-          ) : (
-            <p className="empty-state">Select a job to inspect plan, citations, and output.</p>
-          )}
-        </aside>
-      </section>
-    </main>
-  );
-}
-
-function Metric({ label, value, tone = "neutral" }: { label: string; value: number; tone?: string }) {
-  return (
-    <div className="metric" data-tone={tone}>
-      <span>{label}</span>
-      <strong>{value}</strong>
+        {selected ? (
+          <>
+            <Reader
+              job={selected}
+              queueAvailable={meta?.queue.available ?? false}
+              onCancel={(id) => void act(() => cancelJob(id), "The dive could not be cancelled.")}
+              onRetry={(id) => void act(() => retryJob(id), "The dive could not be restarted.")}
+              onRun={(id) => void act(() => runJob(id), "The dive could not be started.")}
+            />
+            <aside className="instruments" aria-label="Dive instruments">
+              <Sounding job={selected} />
+              <div className="instrument-notes">
+                {selected.metadata.route_reason ? <p className="route">{selected.metadata.route_reason}</p> : null}
+                <Timeline job={selected} />
+              </div>
+            </aside>
+          </>
+        ) : (
+          <section className="empty">
+            <h2>{loaded ? "No dives yet" : "Loading dives"}</h2>
+            <p>
+              Ask a question above. Shallow dives return one cited answer in seconds; deep dives plan the question,
+              gather sources for each part and write a full report.
+            </p>
+          </section>
+        )}
+      </main>
     </div>
   );
 }
-
-function ReportInspector({
-  job,
-  onRunNow
-}: {
-  job: ResearchJob;
-  onRunNow: (jobId: string) => Promise<void>;
-}) {
-  return (
-    <div className="report-body">
-      <div className="report-meta">
-        <span className="status-pill" data-status={job.status}>
-          {statusLabels[job.status]}
-        </span>
-        <span>{job.id.slice(0, 8)}</span>
-      </div>
-
-      {job.status === "queued" ? (
-        <button className="secondary-action" type="button" onClick={() => void onRunNow(job.id)}>
-          <PlayIcon />
-          Run now
-        </button>
-      ) : null}
-
-      {job.report ? (
-        <a className="secondary-action" href={apiUrl(`/v1/research/${job.id}/report.md`)}>
-          <DownloadIcon />
-          Download Markdown
-        </a>
-      ) : null}
-
-      <div className="inspector-block">
-        <h3>Plan</h3>
-        {job.plan.length > 0 ? (
-          <ol>
-            {job.plan.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        ) : (
-          <p>Waiting for the worker to select a path.</p>
-        )}
-      </div>
-
-      <div className="inspector-block">
-        <h3>Report</h3>
-        <pre>{job.report ?? job.error ?? "Report output will appear here."}</pre>
-      </div>
-
-      <div className="inspector-block">
-        <h3>Citations</h3>
-        {job.citations.length > 0 ? (
-          <ul>
-            {job.citations.map((citation) => (
-              <li key={citation}>{citation}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No citations captured yet.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default App;

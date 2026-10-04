@@ -32,7 +32,10 @@ services:
     build:
       context: ./apps/research-service
     environment:
-      KRAI_PROVIDER: mock
+      KRAI_PROVIDER: ${KRAI_PROVIDER:-mock}
+      KRAI_NVIDIA_API_KEY: ${KRAI_NVIDIA_API_KEY:-}
+      KRAI_TAVILY_API_KEY: ${KRAI_TAVILY_API_KEY:-}
+      KRAI_MOCK_LATENCY_SECONDS: "0.6"
       KRAI_REDIS_URL: redis://redis:6379/0
       KRAI_DATABASE_URL: postgresql://krai:krai-dev-password@postgres:5432/krai
       KRAI_STORAGE_PATH: /data/jobs.json
@@ -51,10 +54,16 @@ services:
       context: ./apps/research-service
     command: ["python", "-m", "kube_research_aiq.worker"]
     environment:
-      KRAI_PROVIDER: mock
+      KRAI_PROVIDER: ${KRAI_PROVIDER:-mock}
+      KRAI_NVIDIA_API_KEY: ${KRAI_NVIDIA_API_KEY:-}
+      KRAI_TAVILY_API_KEY: ${KRAI_TAVILY_API_KEY:-}
+      KRAI_MOCK_LATENCY_SECONDS: "0.6"
+      KRAI_WORKER_METRICS_PORT: "9100"
       KRAI_REDIS_URL: redis://redis:6379/0
       KRAI_DATABASE_URL: postgresql://krai:krai-dev-password@postgres:5432/krai
       KRAI_STORAGE_PATH: /data/jobs.json
+    ports:
+      - "9100:9100"
     depends_on:
       redis:
         condition: service_healthy

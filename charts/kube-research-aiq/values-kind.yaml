@@ -13,6 +13,8 @@ config:
   environment: kind
   provider: mock
   corsOrigins: "*"
+  # Pace offline dives so the dashboard shows each stage.
+  mockLatencySeconds: "0.6"
 
 postgres:
   enabled: true

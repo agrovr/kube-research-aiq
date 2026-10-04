@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/component: benchmark
 spec:
   schedule: {{ .Values.benchmarkCronJob.schedule | quote }}
+  concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -24,5 +25,5 @@ spec:
                 - |
                   curl -sS -X POST "http://{{ include "kube-research-aiq.fullname" . }}-api/v1/research" \
                     -H 'Content-Type: application/json' \
-                    -d '{"query": "{{ .Values.benchmarkCronJob.query }}", "depth": "deep", "tenant": "benchmark"}'
+                    -d '{"query": "{{ .Values.benchmarkCronJob.query }}", "depth": "deep", "tenant": "benchmark", "tags": ["benchmark"]}'
 {{- end }}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: "Instrument Sans"; src: url("../../apps/dashboard/node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2"); font-weight: 400 700; }
+@font-face { font-family: "Newsreader"; src: url("../../apps/dashboard/node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2"); font-weight: 200 800; }
+@font-face { font-family: "Newsreader"; font-style: italic; src: url("../../apps/dashboard/node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-italic.woff2"); font-weight: 200 800; }
+:root { --paper:#f3f7f8; --ink:#10283a; --soft:#46606f; --contour:#6f93a4; --shoal:#cfe6ee; --magenta:#a8246f; }
+html,body { margin:0; }
+body { width:1280px; height:400px; overflow:hidden; font-family:"Instrument Sans"; color:var(--ink);
+  background: linear-gradient(180deg, var(--shoal) 0%, #e3f0f4 38%, var(--paper) 72%); position:relative; }
+svg.chart { position:absolute; inset:0; }
+.copy { position:absolute; left:72px; top:96px; width:640px; }
+.mark { width:58px; height:58px; display:block; margin-bottom:22px; }
+h1 { margin:0; font-family:"Instrument Sans"; font-weight:650; font-size:60px; letter-spacing:-0.02em; line-height:1; }
+p.tag { margin:16px 0 0; font-family:"Newsreader"; font-style:italic; font-size:29px; color:var(--soft); line-height:1.25; }
+p.sub { margin:26px 0 0; font-size:16px; color:var(--soft); font-weight:500; }
+</style></head><body>
+<svg class="chart" id="chart" viewBox="0 0 1280 400"></svg>
+<div class="copy">
+  <svg class="mark" viewBox="0 0 32 32"><path d="M3 22c4.3 0 4.3-2 8.6-2s4.3 2 8.6 2 4.3-2 8.6-2" fill="none" stroke="#6f93a4" stroke-width="1.6" stroke-linecap="round"/><path d="M3 27c4.3 0 4.3-2 8.6-2s4.3 2 8.6 2 4.3-2 8.6-2" fill="none" stroke="#6f93a4" stroke-width="1.6" stroke-linecap="round"/><path d="M16 2v9" stroke="#10283a" stroke-width="1.6" stroke-linecap="round"/><path d="M16 10.5 20 18q-4 4.5-8 0Z" fill="#a8246f"/></svg>
+  <h1>KubeResearch AIQ</h1>
+  <p class="tag">Research agents that dive as deep as the question.</p>
+  <p class="sub">Cited reports from a research pipeline that runs, scales and recovers on Kubernetes.</p>
+</div>
+<script>
+const svg = document.getElementById("chart"), NS = "http://www.w3.org/2000/svg";
+const el = (n, a, t) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (t) e.textContent = t; svg.appendChild(e); return e; };
+// Bathymetric contours drifting across the right half, fading in from behind the title.
+const masks = el("defs", {});
+masks.innerHTML = '<linearGradient id="fadeGrad" x1="560" x2="820" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient><mask id="fade" maskUnits="userSpaceOnUse" x="0" y="0" width="1280" height="400"><rect width="1280" height="400" fill="url(#fadeGrad)"/></mask>';
+for (let i = 0; i < 9; i++) {
+  const base = 40 + i * 42, pts = [];
+  for (let x = 560; x <= 1290; x += 10) {
+    const y = base + 14 * Math.sin(x / 95 + i * 0.9) + 8 * Math.sin(x / 41 + i * 2.1);
+    pts.push((pts.length ? "L" : "M") + x + " " + y.toFixed(1));
+  }
+  el("path", { d: pts.join(" "), fill: "none", mask: "url(#fade)", stroke: "#6f93a4", "stroke-width": 0.9, "stroke-dasharray": i % 3 === 2 ? "3 4" : "none", opacity: 0.55 - i * 0.035 });
+}
+// Scattered soundings, deeper toward the bottom, the way a chart marks depths.
+const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(11);
+const placed = [];
+for (let k = 0; k < 400 && placed.length < 18; k++) {
+  const x = 700 + rnd() * 540, y = 30 + rnd() * 310;
+  if (x > 975 && x < 1050) continue;                 // keep clear of the line
+  if (x > 1040 && Math.abs(((y - 58) % 64 + 64) % 64 - 0) < 22) continue;  // and the stage labels
+  if (x > 1100 && x < 1180) continue;
+  if (placed.some(([px, py]) => Math.abs(px - x) < 70 && Math.abs(py - y) < 26)) continue;
+  placed.push([x, y]);
+  const d = Math.round(Math.pow(y / 380, 2.2) * 4000 / 10) * 10 + 5;
+  el("text", { x, y, fill: "#6f93a4", "font-family": "Newsreader", "font-style": "italic", "font-size": 13, opacity: 0.8 }, d.toLocaleString("en-US"));
+}
+// The sounding line with its five stages, ending on the seabed.
+const LX = 1010, lineTop = 0, floor = 352;
+el("rect", { x: 900, y: floor, width: 380, height: 60, fill: "url(#hatch)" });
+const defs = el("defs", {}); defs.innerHTML = '<pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#6f93a4" stroke-width="1.2" opacity="0.6"/></pattern>';
+el("line", { x1: 900, x2: 1280, y1: floor, y2: floor, stroke: "#46606f", "stroke-width": 1.2 });
+el("line", { x1: LX, x2: LX, y1: lineTop, y2: floor - 10, stroke: "#10283a", "stroke-width": 1.6 });
+const stages = [["Survey", 0.08], ["Plan", 0.18], ["Descend", 0.5], ["Draft", 0.9], ["Surface", 1]];
+stages.forEach(([name, p], i) => {
+  const y = 12 + (floor - 22) * Math.sqrt(p), ly = 58 + i * 64;
+  el("path", { d: `M${LX + 6} ${y} C ${LX + 50} ${y}, ${LX + 60} ${ly}, ${LX + 96} ${ly}`, fill: "none", stroke: "#6f93a4", "stroke-width": 1 });
+  el("circle", { cx: LX, cy: y, r: 4.5, fill: i < 4 ? "#10283a" : "#ffffff", stroke: i < 4 ? "#10283a" : "#a8246f", "stroke-width": 1.6 });
+  el("text", { x: LX + 104, y: ly + 5, fill: i < 4 ? "#10283a" : "#a8246f", "font-family": "Instrument Sans", "font-weight": 600, "font-size": 16 }, name);
+});
+el("path", { d: `M${LX} ${floor - 21} l7 13 q-7 9 -14 0 z`, fill: "#a8246f" });
+el("text", { x: LX - 18, y: floor - 8, "text-anchor": "end", fill: "#10283a", "font-family": "Newsreader", "font-style": "italic", "font-size": 26 }, "4,000 m");
+</script>
+</body></html>

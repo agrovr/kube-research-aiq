@@ -5,7 +5,7 @@ DigitalOcean Kubernetes, or DOKS. It keeps the deployment architecture focused o
 standard Kubernetes objects while offloading control-plane management to
 DigitalOcean. This is not the no-cost deployment path.
 
-For a no-cost public deployment, use [deploy-free-k3s.md](deploy-free-k3s.md).
+For a no-cost public deployment, use [Oracle Always Free with k3s](oracle-k3s.md).
 
 The guide uses a pragmatic live-demo profile:
 

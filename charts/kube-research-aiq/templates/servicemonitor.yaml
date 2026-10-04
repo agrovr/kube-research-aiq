@@ -8,11 +8,18 @@ metadata:
     {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
 spec:
   selector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values: [api, worker]
     matchLabels:
-      app.kubernetes.io/component: api
       app.kubernetes.io/instance: {{ .Release.Name }}
   endpoints:
+    # The API reports queue and job totals; workers report dive and stage durations.
     - port: http
+      path: /metrics
+      interval: 30s
+    - port: metrics
       path: /metrics
       interval: 30s
 {{- end }}
