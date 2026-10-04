@@ -71,8 +71,8 @@ try {
     throw "NVIDIA smoke job did not succeed. Status=$($job.status) Error=$($job.error)"
   }
 
-  if ($job.report -match "Mock response") {
-    throw "NVIDIA smoke job succeeded but still used the mock provider."
+  if ($job.metadata.writer -ne "model") {
+    throw "NVIDIA smoke job succeeded but was written offline, not by the model."
   }
 
   Write-Host "NVIDIA smoke test succeeded."

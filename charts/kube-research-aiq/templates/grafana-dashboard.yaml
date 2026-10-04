@@ -5,44 +5,172 @@ metadata:
   name: {{ include "kube-research-aiq.fullname" . }}-grafana-dashboard
   labels:
     {{- include "kube-research-aiq.labels" . | nindent 4 }}
-    {{- toYaml .Values.grafanaDashboard.labels | nindent 4 }}
+    {{- with .Values.grafanaDashboard.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 data:
   kube-research-aiq.json: |
     {
       "uid": "kube-research-aiq",
       "title": "KubeResearch AIQ",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "15s",
-      "tags": ["kubernetes", "aiq", "nvidia"],
-      "time": {"from": "now-1h", "to": "now"},
+      "tags": [
+        "kubernetes",
+        "aiq",
+        "research"
+      ],
+      "time": {
+        "from": "now-3h",
+        "to": "now"
+      },
       "panels": [
         {
           "type": "stat",
-          "title": "Jobs Created",
-          "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
-          "targets": [{"expr": "sum(krai_jobs_created_total)", "legendFormat": "created"}]
-        },
-        {
-          "type": "stat",
-          "title": "Queue Available",
-          "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
-          "targets": [{"expr": "max(krai_queue_available)", "legendFormat": "queue"}]
-        },
-        {
-          "type": "barchart",
-          "title": "Jobs by Status",
-          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+          "title": "Dives waiting",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
           "targets": [
-            {"expr": "sum by (status) (krai_jobs_by_status)", "legendFormat": "{{`{{status}}`}}"}
+            {
+              "expr": "max(krai_queue_waiting)",
+              "legendFormat": "waiting"
+            }
           ]
         },
         {
-          "type": "barchart",
-          "title": "Jobs by Depth",
-          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+          "type": "stat",
+          "title": "Dives in progress",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
           "targets": [
-            {"expr": "sum by (depth) (krai_jobs_by_depth)", "legendFormat": "{{`{{depth}}`}}"}
+            {
+              "expr": "max(krai_queue_in_progress)",
+              "legendFormat": "in progress"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Failure ratio (1h)",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(krai_jobs_finished_total{status=\"failed\"}[1h])) / clamp_min(sum(increase(krai_jobs_finished_total[1h])), 1)",
+              "legendFormat": "failed"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Stalled dives requeued (1h)",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(krai_jobs_reaped_total[1h]))",
+              "legendFormat": "reaped"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Dive duration, p50 and p95",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.5, sum by (le, depth) (rate(krai_job_duration_seconds_bucket[10m])))",
+              "legendFormat": "p50 {{`{{depth}}`}}"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum by (le, depth) (rate(krai_job_duration_seconds_bucket[10m])))",
+              "legendFormat": "p95 {{`{{depth}}`}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Time per stage, p95",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(krai_stage_duration_seconds_bucket[10m])))",
+              "legendFormat": "{{`{{stage}}`}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Dives finished",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 13
+          },
+          "targets": [
+            {
+              "expr": "sum by (status) (rate(krai_jobs_finished_total[5m]))",
+              "legendFormat": "{{`{{status}}`}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Sources cited by origin",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 13
+          },
+          "targets": [
+            {
+              "expr": "sum by (origin) (rate(krai_sources_retrieved_total[5m]))",
+              "legendFormat": "{{`{{origin}}`}}"
+            }
           ]
         }
       ]

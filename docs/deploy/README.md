@@ -1,7 +1,16 @@
-# Deployment Options
+# Deployment options
 
 KubeResearch AIQ supports two deployment modes: a local Kubernetes environment
 for reproducible demos and a public Kubernetes environment for external access.
+
+## Choosing a guide
+
+| Guide | Where it runs | Cost | What it shows |
+| :-- | :-- | :-- | :-- |
+| [kind](kind.md) | Your machine | Free | The full chart: Redis, PostgreSQL, workers, Grafana dashboard, benchmark CronJob |
+| [Oracle Always Free + k3s](oracle-k3s.md) | A public VM | Free within limits | The full platform behind Traefik and Let's Encrypt |
+| [Google Cloud e2-micro + k3s](gce-e2-micro.md) | A public VM | Free within limits | A trimmed profile: API and dashboard only, dives run in the API |
+| [DigitalOcean Kubernetes](digitalocean.md) | Managed cluster | Paid | Managed control plane, load balancer and TLS |
 
 ## Local demo with kind
 
@@ -32,12 +41,12 @@ The recommended free public track is:
 - Traefik and ServiceLB from k3s for ingress
 - `sslip.io` or an owned domain for DNS
 
-See [deploy-free-k3s.md](deploy-free-k3s.md). This path is designed to avoid paid
+See [Oracle Always Free with k3s](oracle-k3s.md). This path is designed to avoid paid
 managed Kubernetes clusters and paid cloud load balancers, as long as you stay
 inside the cloud provider's Always Free limits.
 
 If Oracle Ampere capacity is unavailable, use the smaller Google Cloud
-`e2-micro` plus k3s track in [deploy-gce-free-k3s.md](deploy-gce-free-k3s.md).
+`e2-micro` plus k3s track in [Google Cloud e2-micro with k3s](gce-e2-micro.md).
 That profile disables Redis, PostgreSQL, autoscaling, and worker replicas so it
 can fit on a free-tier VM. It is a constrained public demo profile rather than
 the full production architecture.
@@ -68,6 +77,9 @@ kubectl -n aiq-system create secret generic krai-runtime-secrets \
   --from-literal=KRAI_REDIS_URL="$KRAI_REDIS_URL"
 ```
 
+Add `KRAI_TAVILY_API_KEY` to the same Secret and set `secrets.tavilyExistingSecretName` to
+enable live web search next to the bundled library.
+
 Install with Helm:
 
 ```bash
@@ -94,11 +106,3 @@ Before applying it to a target cluster, update:
 - `ingress.host`
 - `config.corsOrigins`
 - TLS issuer annotation if your cluster uses a different cert-manager issuer
-
-## Project narrative
-
-The concise project description:
-
-> A Kubernetes-native AI research agent platform with async API/worker
-> orchestration, NVIDIA-hosted model integration, Helm packaging, GitOps
-> deployment, persistent state, observability, and production overlays.

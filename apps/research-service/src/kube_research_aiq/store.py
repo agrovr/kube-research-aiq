@@ -15,13 +15,14 @@ from kube_research_aiq.settings import Settings
 class JobStore:
     """Small storage facade.
 
-    Redis is used in Kubernetes. A JSON file fallback keeps local demos and tests simple.
+    PostgreSQL is the durable store in Kubernetes, Redis the lighter alternative, and a JSON
+    file keeps local demos and tests simple. The first one configured wins.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, redis_client: Redis | None = None):
         self.settings = settings
         self._lock = threading.Lock()
-        self._redis: Redis | None = None
+        self._redis: Redis | None = redis_client
         self._postgres_ready = False
         self._postgres_error: str | None = None
         if settings.database_url:
@@ -32,7 +33,7 @@ class JobStore:
             except psycopg.Error as exc:
                 self._postgres_ready = False
                 self._postgres_error = str(exc)
-        if settings.redis_url:
+        if settings.redis_url and redis_client is None:
             try:
                 self._redis = Redis.from_url(settings.redis_url, decode_responses=True)
                 self._redis.ping()
@@ -54,6 +55,12 @@ class JobStore:
     @property
     def postgres_error(self) -> str | None:
         return self._postgres_error
+
+    @property
+    def backend(self) -> str:
+        if self.using_postgres:
+            return "postgres"
+        return "redis" if self.using_redis else "file"
 
     def create(self, job: ResearchJob) -> ResearchJob:
         self.save(job)
@@ -83,16 +90,17 @@ class JobStore:
                     """
                     select payload
                     from research_jobs
-                    order by updated_at desc
+                    order by created_at desc
                     limit 200
                     """
                 ).fetchall()
                 return [ResearchJob.model_validate(row["payload"]) for row in rows]
         if self._redis:
-            ids = self._redis.lrange("krai:jobs:index", 0, -1)
-            jobs = [self.get(job_id) for job_id in ids]
-            return [job for job in jobs if job is not None]
-        return list(self._file_jobs().values())
+            ids = self._redis.lrange("krai:jobs:index", -200, -1)[::-1]
+            raws = self._redis.mget([self._key(job_id) for job_id in ids]) if ids else []
+            return [ResearchJob.model_validate_json(raw) for raw in raws if raw]
+        jobs = sorted(self._file_jobs().values(), key=lambda j: j.created_at, reverse=True)
+        return jobs[:200]
 
     def save(self, job: ResearchJob) -> None:
         job.touch()

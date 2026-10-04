@@ -1,14 +1,16 @@
 apiVersion: v2
 name: kube-research-aiq
-description: Kubernetes-native AI-Q inspired async research platform
+description: Research agents that dive as deep as the question. An AI-Q inspired research platform for Kubernetes.
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.2.0
+appVersion: "0.2.0"
 keywords:
   - aiq
   - nvidia
   - kubernetes
   - research-agent
   - nim
+home: https://github.com/agrovr/kube-research-aiq
 maintainers:
-  - name: KubeResearch AIQ
+  - name: Ashmit Grover
+    url: https://github.com/agrovr

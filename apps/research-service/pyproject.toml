@@ -1,7 +1,7 @@
 [project]
 name = "kube-research-aiq"
-version = "0.1.0"
-description = "Kubernetes-native AI-Q inspired async research service."
+version = "0.2.0"
+description = "Research agents that dive as deep as the question: the KubeResearch AIQ API and worker."
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115.0",
@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "fakeredis>=2.26.0",
   "pytest>=8.3.0",
   "ruff>=0.6.0"
 ]
@@ -30,6 +31,13 @@ packages = ["src/kube_research_aiq"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["SIM905"]  # word lists read better as one split string
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Query"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

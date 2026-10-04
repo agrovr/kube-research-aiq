@@ -60,7 +60,7 @@ Open `http://localhost:5173`.
 
 This URL is reachable only from the local development device while the
 port-forward process is running. It is suitable for local validation and demos,
-but it is not a public deployment. Use [deployment options](deployment-options.md)
+but it is not a public deployment. Use [deployment options](README.md)
 for externally reachable environments.
 
 The Helm chart mounts an nginx config into the dashboard pod so `/v1`,

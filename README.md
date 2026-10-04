@@ -1,216 +1,198 @@
-# KubeResearch AIQ
+<img src="docs/media/banner.png" alt="KubeResearch AIQ: research agents that dive as deep as the question. A sounding line descends through survey, plan, descend, draft and surface to 4,000 m." width="100%">
 
-[![CI](https://github.com/agrovr/kube-research-aiq/actions/workflows/ci.yml/badge.svg)](https://github.com/agrovr/kube-research-aiq/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](apps/research-service)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0f172a)](apps/dashboard)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm%20%2B%20ArgoCD-326CE5?logo=kubernetes&logoColor=white)](charts/kube-research-aiq)
-[![NVIDIA](https://img.shields.io/badge/NVIDIA-AI--Q%20Inspired-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/nvidia/aiq/blueprintcard)
+<p align="center">
+  <a href="https://github.com/agrovr/kube-research-aiq/actions/workflows/ci.yml"><img src="https://github.com/agrovr/kube-research-aiq/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
 
-KubeResearch AIQ is a Kubernetes-native research-agent platform inspired by the
-NVIDIA AI-Q Blueprint. The project adapts AI-Q style shallow and deep research
-workflows into an asynchronous platform with a FastAPI control plane, worker
-pool, persistent storage, Helm packaging, GitOps manifests, metrics, autoscaling,
-and benchmark hooks.
+<p align="center"><code>PYTHON 3.12</code> · <code>FASTAPI</code> · <code>REACT 19</code> · <code>REDIS</code> · <code>POSTGRESQL</code> · <code>HELM</code> · <code>ARGO CD</code> · <code>KEDA</code></p>
 
-The service runs without external credentials in `mock` mode, which makes CI and
-local Kubernetes demonstrations deterministic. For hosted model calls, set
-`KRAI_PROVIDER=nvidia` and provide `KRAI_NVIDIA_API_KEY` through environment
-configuration or a Kubernetes Secret.
+KubeResearch AIQ runs research agents on Kubernetes. Ask a question and it decides how deep to
+go: a **shallow dive** returns one cited answer, and a **deep dive** plans the question, gathers
+sources for each part and writes a full report in which every claim cites its source. The API,
+the workers, the queue and the store are separate workloads that scale and recover on their own.
+They are packaged with Helm and delivered with Argo CD. The design follows NVIDIA's
+[AI-Q research agent blueprint](https://github.com/NVIDIA-AI-Blueprints/aiq).
 
-![KubeResearch AIQ dashboard](docs/assets/dashboard.png)
+It runs with no keys at all. Offline, reports are assembled from a bundled reference library and
+every sentence is taken from the source it cites. Add a model endpoint and a Tavily key and the
+same pipeline writes with a model and searches the web.
 
-## Project highlights
+<p align="center"><img src="docs/media/demo.webp" alt="Asking for a comparison of Kubernetes deployment strategies: the dive is routed deep, the sounding line descends through each stage while sections fill in, and clicking a citation highlights its source." width="100%"></p>
 
-- Kubernetes is the primary orchestration layer for the platform.
-- The research workflow is separated into API and worker workloads.
-- Redis backs async queueing and PostgreSQL stores research jobs/reports.
-- Helm includes Deployments, StatefulSets, ConfigMap, Secret, HPA, NetworkPolicy,
-  ServiceMonitor, Ingress, and a benchmark CronJob.
-- CI validates Python tests, linting, image builds, and Helm rendering.
-- ArgoCD configuration demonstrates a GitOps promotion path.
+## What it does
 
-## Architecture
+- **Routes by depth.** Each question is read and sent shallow or deep, and the reason is recorded
+  ("the question asks to compare").
+- **Researches in stages.** Survey, plan, descend, draft and surface. Each stage logs its time and
+  progress as it goes.
+- **Cites everything.** Sources are numbered once per document. Every section cites them inline,
+  and a citation can only point at a source that was actually retrieved.
+- **Searches two ways.** It ranks a bundled library of 25 Kubernetes and AI-platform briefs with
+  BM25, which needs no embeddings or GPUs, and adds Tavily web search when a key is set.
+- **Writes with or without a model.** Offline, the writer selects cited sentences and never
+  invents text. With a key, it uses any OpenAI-compatible model: NVIDIA NIM, vLLM or a hosted
+  endpoint.
+- **Streams live.** Progress arrives over server-sent events. Dives can be cancelled mid-run and
+  retried.
+- **Doesn't lose work.** Workers take jobs with `BLMOVE`. A worker that dies mid-dive is detected
+  by its heartbeat and its job goes back to the front of the queue. On SIGTERM, workers finish the
+  dive in hand.
+- **Operates like production.** It has Prometheus metrics for dive and stage durations, a Grafana
+  dashboard, KEDA scaling on queue length, NetworkPolicies, non-root read-only containers and
+  GitOps delivery.
 
-```mermaid
-flowchart LR
-  user[User] --> ingress[Ingress]
-  ingress --> dashboard[React dashboard]
-  ingress --> api[FastAPI research API]
-  dashboard --> api
-  api --> redis[(Redis StatefulSet)]
-  api --> postgres[(PostgreSQL StatefulSet)]
-  worker[Research worker Deployment] --> redis
-  worker --> postgres
-  worker --> nim[NVIDIA NIM-compatible API]
-  worker --> store[(Job metadata in Redis)]
-  api --> metrics[Prometheus /metrics]
-  cron[Benchmark CronJob] --> api
-  argocd[ArgoCD] --> helm[Helm release]
-  helm --> api
-  helm --> worker
-  helm --> redis
-```
+## The console
 
-## Repository layout
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/diving.png" alt="A deep dive in progress at 3,600 metres: the sounding line shows survey, plan, descend and draft done, surface in progress, and the report's sections filling in"><br><sub><b>Diving</b>: each stage marked on the sounding line, with its time</sub></td>
+    <td width="50%"><img src="docs/media/console.png" alt="A finished deep report with key findings and citation chips, and the gauge at 4,000 metres"><br><sub><b>Surfaced</b>: key findings, sections and a Markdown download</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/media/citations.png" alt="The sources list with the cited KEDA brief highlighted after clicking its citation"><br><sub><b>Citations</b>: every chip jumps to its source and passage</sub></td>
+    <td width="50%"><img src="docs/media/shallow.png" alt="A shallow answer to What is KEDA, with the gauge stopping at the 200 metre seabed"><br><sub><b>Shallow</b>: direct questions stop at 200 m</sub></td>
+  </tr>
+</table>
 
-```text
-apps/research-service/       FastAPI app, worker, tests, Dockerfile
-apps/dashboard/              React dashboard for creating and inspecting runs
-charts/kube-research-aiq/    Helm chart for Kubernetes deployment
-deploy/argocd/               ArgoCD Application example
-docs/                        Architecture and implementation notes
-scripts/                     Local smoke-test helpers
-.github/workflows/           CI pipeline
-```
+The console is styled like a nautical chart. Shallow water is tinted and deep water left white,
+soundings are set in italic, and chart magenta marks whatever is live. On a phone, the live dive
+comes first ([screenshot](docs/media/mobile.png)).
 
-## Demo and deployment guides
+## Quick start
 
-- [Demo walkthrough](docs/demo-walkthrough.md): interview and portfolio demo flow
-- [kind demo](docs/kind-demo.md): local Kubernetes demo on Docker Desktop
-- [Google Cloud e2-micro k3s deployment](docs/deploy-gce-free-k3s.md): constrained free-tier public demo
-- [Free k3s deployment](docs/deploy-free-k3s.md): no-cost public deployment track
-- [DigitalOcean Kubernetes deployment](docs/deploy-doks.md): managed Kubernetes deployment option
-- [Deployment options](docs/deployment-options.md): local vs public deployment tradeoffs
-
-## Local quick start
+**Offline, no services.** This needs Python 3.11+ and Node 20+.
 
 ```bash
-cd apps/research-service
-python -m pip install -e ".[dev]"
-KRAI_PROVIDER=mock uvicorn kube_research_aiq.main:app --reload
+make install dashboard-install
+make run-api          # API on :8000; dives run in the API process
+make dashboard-dev    # console on :5173
 ```
 
-Create a research job:
-
-```bash
-curl -X POST http://localhost:8000/v1/research \
-  -H "Content-Type: application/json" \
-  -d '{"query":"Compare Kubernetes deployment strategies for AI research agents.","depth":"deep"}'
-```
-
-Run with Redis, API, and worker:
+**The whole platform**, with Redis, PostgreSQL, a separate worker and the console on
+[localhost:5173](http://localhost:5173):
 
 ```bash
 docker compose up --build
 ```
 
-Open the dashboard at `http://localhost:5173`.
-
-For frontend-only development:
+**Kubernetes.** Run it locally with [kind](docs/deploy/kind.md), or install the chart anywhere:
 
 ```bash
-cd apps/dashboard
-npm install
-npm run dev
+helm upgrade --install kuberesearch charts/kube-research-aiq -n aiq-system --create-namespace
 ```
 
-## Kubernetes quick start
-
-For a local Kubernetes environment, use the [kind demo guide](docs/kind-demo.md).
-kind port-forwarded URLs are scoped to the local development device. External
-access requires a reachable Kubernetes cluster with an Ingress controller; see
-[deployment options](docs/deployment-options.md).
-
-Run the complete local kind demo:
-
-```powershell
-.\scripts\local-demo.ps1
-```
-
-Render the chart:
+**Models and web search** are optional. Set them in `.env` for compose, or in chart values:
 
 ```bash
-helm template kuberesearch charts/kube-research-aiq --namespace aiq-system
+KRAI_PROVIDER=nvidia
+KRAI_NVIDIA_API_KEY=...          # or KRAI_LLM_BASE_URL for your own vLLM or NIM server
+KRAI_TAVILY_API_KEY=...
 ```
 
-Install in a cluster:
+Try a dive from the command line:
 
 ```bash
-helm upgrade --install kuberesearch charts/kube-research-aiq \
-  --namespace aiq-system \
-  --create-namespace \
-  --set image.repository=ghcr.io/agrovr/kube-research-aiq/research-service \
-  --set image.tag=0.1.0
+curl -X POST localhost:8000/v1/research -H 'Content-Type: application/json' \
+  -d '{"query": "How should research workers autoscale on a Redis queue?"}'
+./scripts/smoke-test.sh      # runs a deep dive end to end and checks its citations
 ```
 
-Use NVIDIA-hosted NIM-compatible endpoints:
+## How a dive works
+
+| Stage | What happens |
+| :-- | :-- |
+| **Survey** | Read the question, choose shallow or deep, and record why |
+| **Plan** | Break it into sections, each with its own question (one for shallow, up to five for deep) |
+| **Descend** | Retrieve sources for every question, favouring documents not yet used, and number each new one |
+| **Draft** | Write each section from its numbered sources, citing them inline |
+| **Surface** | Write the key findings, measure citation coverage and assemble the Markdown report |
+
+Every stage saves its progress, which is also the worker's heartbeat. Between stages the worker
+checks for cancellation. More in [the research engine](docs/research-engine.md).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  console([Console]) -->|/v1, SSE| api[API]
+  api -->|LPUSH| redis[(Redis queue)]
+  api --> pg[(PostgreSQL)]
+  redis -->|BLMOVE| worker[Workers]
+  worker --> pg
+  worker --> library[[Reference library]]
+  worker -.-> tavily[Tavily]
+  worker -.-> model[OpenAI-compatible model]
+  keda[KEDA] -.->|queue length| worker
+  prom[Prometheus] --> api & worker
+```
+
+The chart renders:
+
+- Deployments for the API, workers and console
+- StatefulSets for Redis and PostgreSQL
+- HPAs or a KEDA `ScaledObject`
+- NetworkPolicy
+- Ingress tuned for streaming
+- a ServiceMonitor covering both the API and the workers
+- a Grafana dashboard
+- a scheduled benchmark dive
+
+Containers run as non-root with read-only filesystems. Credentials come from Secrets, which can be
+created by the chart or referenced by name. See [architecture](docs/architecture.md) and
+[operations](docs/operations.md).
+
+## API
+
+| | |
+| :-- | :-- |
+| `POST /v1/research` | Start a dive (`query`, `depth`: `auto`, `shallow` or `deep`) |
+| `GET /v1/research/{id}` | The dive: plan, sections, sources, timeline, report |
+| `GET /v1/research/{id}/events` | Live updates as server-sent events |
+| `GET /v1/research/{id}/report.md` | The report as Markdown |
+| `POST /v1/research/{id}/cancel`, `/retry` | Stop a dive, or send it down again |
+| `GET /v1/meta`, `/v1/library` | Writer, sources, queue and store; the reference library |
+
+There are also `GET /v1/research`, `POST /v1/research/{id}/run`, `/healthz`, `/readyz`,
+`/metrics`, and interactive docs at `/docs`. Full reference: [docs/api.md](docs/api.md).
+
+## Repository layout
+
+```text
+apps/research-service/      FastAPI API, worker, research pipeline, reference library, tests
+  src/kube_research_aiq/
+    researcher.py           the five-stage pipeline and depth routing
+    retrieval.py            BM25 over the library, Tavily web search, merging
+    writer.py               offline and model writers, planning, citations
+    queue.py                reliable Redis queue and stalled-job reaper
+    library/                25 reference briefs, one Markdown file each
+apps/dashboard/             the console (React, TypeScript, Vite)
+charts/kube-research-aiq/   Helm chart with kind, free-tier and production profiles
+deploy/argocd/              Argo CD applications
+docs/                       architecture, engine, API, operations, deployment guides
+scripts/                    smoke tests, kind and cloud deployment, media capture
+```
+
+## Development
 
 ```bash
-helm upgrade --install kuberesearch charts/kube-research-aiq \
-  --namespace aiq-system \
-  --create-namespace \
-  --set config.provider=nvidia \
-  --set secrets.nvidiaApiKey="$NVIDIA_API_KEY"
+make test        # pytest: retrieval, writers, pipeline, cancellation, API, streaming, queue
+make lint        # ruff
+cd apps/dashboard && npm run lint && npm run build
 ```
 
-## API surface
+CI runs on every push and pull request:
 
-- `POST /v1/research`: create a shallow, deep, or auto-routed research job
-- `GET /v1/research`: list jobs
-- `GET /v1/research/{job_id}`: fetch a job and report
-- `GET /v1/research/{job_id}/report.md`: download a Markdown report
-- `POST /v1/research/{job_id}/run`: manually run a job, useful without Redis
-- `GET /healthz`, `GET /readyz`, `GET /metrics`: operational endpoints
+- lint and the full test suite
+- an end-to-end dive through the running API
+- the console's lint and type-checked build
+- `helm lint` and `helm template` for every values profile and for KEDA, validated with
+  kubeconform
+- both container images, with a smoke test of the API image
 
-## Dashboard
+On `main`, CI also publishes the images to GHCR.
 
-The React dashboard provides an operator workspace with:
+## Documentation
 
-- Research request composer
-- Auto/shallow/deep depth selection
-- Queue and status view
-- Report inspector with plan, citations, and output
-- Markdown report download
-- Runtime readiness strip for queue/store state
-
-## Observability
-
-The API exposes Prometheus metrics at `/metrics`, including queue availability,
-created-job counts, and job totals by status/depth. The Helm chart can also
-render a Grafana dashboard ConfigMap for clusters that use the Grafana dashboard
-sidecar.
-
-## NVIDIA key validation
-
-Do not commit NVIDIA keys to this repository. To validate a key, set it only in
-the active shell and run the validation script:
-
-```powershell
-$env:KRAI_NVIDIA_API_KEY = "paste-key-here"
-.\scripts\validate-nvidia-key.ps1
-```
-
-If the key is accepted, the script prints a short list of available model IDs.
-To verify chat completions too:
-
-```powershell
-.\scripts\validate-nvidia-key.ps1 -Chat -ChatModel "mistralai/mixtral-8x7b-instruct-v0.1"
-```
-
-For kind deployment with NVIDIA provider mode, see [docs/kind-demo.md](docs/kind-demo.md).
-
-## Production deployment
-
-The chart includes a production values file for a public Kubernetes target:
-
-```bash
-helm upgrade --install kuberesearch charts/kube-research-aiq \
-  --namespace aiq-system \
-  --create-namespace \
-  --values charts/kube-research-aiq/values.yaml \
-  --values charts/kube-research-aiq/values-production.yaml
-```
-
-The production profile expects externally managed Redis/PostgreSQL connection
-strings and the NVIDIA key in a Kubernetes Secret named `krai-runtime-secrets`.
-It enables Ingress, TLS annotations, HPA, NetworkPolicy, ServiceMonitor, Grafana
-dashboard discovery, and benchmark CronJobs.
-
-For GitOps, use
-[`deploy/argocd/application-production.yaml`](deploy/argocd/application-production.yaml).
-For live access options, see [docs/deployment-options.md](docs/deployment-options.md).
-
-## Upstream inspiration
-
-- NVIDIA AI-Q Blueprint: https://build.nvidia.com/nvidia/aiq/blueprintcard
-- NVIDIA AI-Q GitHub: https://github.com/NVIDIA-AI-Blueprints/aiq
+[Architecture](docs/architecture.md) · [Research engine](docs/research-engine.md) ·
+[API](docs/api.md) · [Operating it](docs/operations.md) · [Deployment](docs/deploy/README.md) ·
+[Demo walkthrough](docs/demo-walkthrough.md) · [Roadmap](docs/roadmap.md)

@@ -20,6 +20,8 @@ spec:
           port: 8000
         - protocol: TCP
           port: 8080
+        - protocol: TCP
+          port: {{ .Values.worker.metricsPort }}
     - from:
         - podSelector:
             matchLabels:

@@ -38,3 +38,28 @@ redis://{{ include "kube-research-aiq.fullname" . }}-redis:6379/0
 {{- define "kube-research-aiq.postgresDsn" -}}
 postgresql://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ include "kube-research-aiq.fullname" . }}-postgres:5432/{{ .Values.postgres.database }}
 {{- end -}}
+
+
+{{/* Environment shared by the API and the worker. */}}
+{{- define "kube-research-aiq.env" -}}
+envFrom:
+  - configMapRef:
+      name: {{ include "kube-research-aiq.fullname" . }}-config
+  {{- if .Values.secrets.create }}
+  - secretRef:
+      name: {{ include "kube-research-aiq.fullname" . }}-secrets
+  {{- end }}
+{{- $s := .Values.secrets }}
+{{- if or $s.nvidiaExistingSecretName $s.databaseExistingSecretName $s.redisExistingSecretName $s.tavilyExistingSecretName }}
+env:
+  {{- range $pair := list (list "KRAI_NVIDIA_API_KEY" $s.nvidiaExistingSecretName $s.nvidiaExistingSecretKey) (list "KRAI_DATABASE_URL" $s.databaseExistingSecretName $s.databaseExistingSecretKey) (list "KRAI_REDIS_URL" $s.redisExistingSecretName $s.redisExistingSecretKey) (list "KRAI_TAVILY_API_KEY" $s.tavilyExistingSecretName $s.tavilyExistingSecretKey) }}
+  {{- if index $pair 1 }}
+  - name: {{ index $pair 0 }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ index $pair 1 | quote }}
+        key: {{ index $pair 2 | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end -}}

@@ -1,5 +1,8 @@
 FROM python:3.12-slim AS runtime
 
+LABEL org.opencontainers.image.source="https://github.com/agrovr/kube-research-aiq" \
+      org.opencontainers.image.title="KubeResearch AIQ research-service"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1

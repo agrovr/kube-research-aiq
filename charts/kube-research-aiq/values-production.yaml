@@ -50,7 +50,9 @@ ingress:
   host: kuberesearch.example.com
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    # Live dive updates stream as server-sent events.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
   tls:
     - secretName: kuberesearch-tls
       hosts:

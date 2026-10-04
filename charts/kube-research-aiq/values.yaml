@@ -4,14 +4,14 @@ replicaCount:
 
 image:
   repository: ghcr.io/agrovr/kube-research-aiq/research-service
-  tag: "0.1.0"
+  tag: "0.2.0"
   pullPolicy: IfNotPresent
 
 dashboard:
   enabled: true
   image:
     repository: ghcr.io/agrovr/kube-research-aiq/dashboard
-    tag: "0.1.0"
+    tag: "0.2.0"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -49,6 +49,12 @@ config:
   redisUrl: ""
   storagePath: /data/jobs.json
   maxReportSections: "5"
+  sourcesPerQuestion: "4"
+  # A running dive whose heartbeat is older than this is returned to the queue.
+  staleAfterSeconds: "300"
+  maxAttempts: "3"
+  # Offline mode only: pause between stages so demos show the dive progressing.
+  mockLatencySeconds: "0"
   corsOrigins: "*"
 
 secrets:
@@ -59,10 +65,12 @@ secrets:
   databaseExistingSecretKey: KRAI_DATABASE_URL
   redisExistingSecretName: ""
   redisExistingSecretKey: KRAI_REDIS_URL
+  tavilyExistingSecretName: ""
+  tavilyExistingSecretKey: KRAI_TAVILY_API_KEY
   nvidiaApiKey: ""
   databaseUrl: ""
+  # Adds live web search (Tavily) alongside the bundled reference library.
   tavilyApiKey: ""
-  serperApiKey: ""
 
 api:
   service:
@@ -77,6 +85,8 @@ api:
       memory: 768Mi
 
 worker:
+  metricsPort: 9100
+  terminationGracePeriodSeconds: 90
   resources:
     requests:
       cpu: 150m
@@ -131,6 +141,17 @@ autoscaling:
     minReplicas: 1
     maxReplicas: 8
     targetCPUUtilizationPercentage: 70
+
+# Queue-depth autoscaling for workers with KEDA (replaces the worker HPA when enabled).
+keda:
+  enabled: false
+  minReplicas: 0
+  maxReplicas: 8
+  jobsPerWorker: "2"
+  cooldownSeconds: 120
+  listName: krai:research-jobs
+  # Defaults to the in-chart Redis service.
+  redisAddress: ""
 
 networkPolicy:
   enabled: true

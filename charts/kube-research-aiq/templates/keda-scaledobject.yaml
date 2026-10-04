@@ -1,0 +1,24 @@
+{{- if .Values.keda.enabled }}
+# Scale workers on the number of dives waiting in the Redis queue instead of CPU:
+# research workers spend most of their time waiting on models and search.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "kube-research-aiq.fullname" . }}-worker
+  labels:
+    {{- include "kube-research-aiq.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  scaleTargetRef:
+    name: {{ include "kube-research-aiq.fullname" . }}-worker
+  minReplicaCount: {{ .Values.keda.minReplicas }}
+  maxReplicaCount: {{ .Values.keda.maxReplicas }}
+  cooldownPeriod: {{ .Values.keda.cooldownSeconds }}
+  triggers:
+    - type: redis
+      metadata:
+        address: {{ .Values.keda.redisAddress | default (printf "%s-redis:6379" (include "kube-research-aiq.fullname" .)) | quote }}
+        listName: {{ .Values.keda.listName | quote }}
+        listLength: {{ .Values.keda.jobsPerWorker | quote }}
+        activationListLength: "0"
+{{- end }}
