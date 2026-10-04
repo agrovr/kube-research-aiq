@@ -73,18 +73,32 @@ jobs:
       - name: Render every profile
         run: |
           mkdir -p rendered
-          helm template kuberesearch charts/kube-research-aiq -n aiq-system > rendered/default.yaml
+          status=0
+          render() {  # name, then extra helm arguments; failures become annotations
+            local name=$1; shift
+            if ! helm template kuberesearch charts/kube-research-aiq -n aiq-system "$@" \
+                > "rendered/$name.yaml" 2> "rendered/$name.err"; then
+              echo "::error title=helm template $name::$(tr '\n' ' ' < "rendered/$name.err")"
+              status=1
+            fi
+            rm -f "rendered/$name.err"
+          }
+          render default
           for values in charts/kube-research-aiq/values-*.yaml; do
-            name=$(basename "$values" .yaml)
-            helm template kuberesearch charts/kube-research-aiq -n aiq-system -f "$values" > "rendered/$name.yaml"
+            render "$(basename "$values" .yaml)" -f "$values"
           done
           # Optional features render too.
-          helm template kuberesearch charts/kube-research-aiq -n aiq-system \
-            --set keda.enabled=true --set serviceMonitor.enabled=true \
-            --set secrets.tavilyApiKey=test > rendered/keda.yaml
-          grep -q "kind: ScaledObject" rendered/keda.yaml
+          render keda --set keda.enabled=true --set serviceMonitor.enabled=true \
+            --set secrets.tavilyApiKey=test
+          if ! grep -q "kind: ScaledObject" rendered/keda.yaml; then
+            echo "::error title=KEDA::No ScaledObject rendered"; status=1
+          fi
           # KEDA owns worker scaling, so only the API keeps an HPA.
-          test "$(grep -c 'kind: HorizontalPodAutoscaler' rendered/keda.yaml)" = 1
+          hpas=$(grep -c "kind: HorizontalPodAutoscaler" rendered/keda.yaml || true)
+          if [ "$hpas" != 1 ]; then
+            echo "::error title=KEDA::Expected 1 HPA with KEDA enabled, found $hpas"; status=1
+          fi
+          exit $status
       - name: Validate against Kubernetes schemas
         run: |
           curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
